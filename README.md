@@ -130,33 +130,59 @@ Este diseño, meticulosamente modelado en **3D**, permite una visualización det
 
 ## Debate Técnico sobre la Gestión de la Movilidad
 
-### 1. Selección e Implementación de Motores
+### MANIFIESTO TÉCNICO: Arquitectura de Visión Ackermann con Triple LiDAR
 
-Para la propulsión del robot utilicé un motor DC con encoder, ya que me permite medir la velocidad angular y la posición de cada rueda, lo cual es clave para controlar con precisión la trayectoria. Este motor se seleccionó por su buen equilibrio entre par (torque) y velocidad para una plataforma de tamaño medio (~1.5 a 2 kg de peso total).
+​Este documento consolida la arquitectura física, la táctica de software y la realidad matemática del sistema de visión construido para el chasis categoría WRO Future Engineers.
 
-El encoder facilita técnicas de control como PID, permitiendo mantener una velocidad constante incluso con cambios en el terreno o peso del robot.
+​### 1. LOS OJOS DEL SISTEMA: El Hardware
 
-Para el sistema de dirección utilicé un servomotor de rotación limitada (180°). Este tipo de actuador me permite posicionar con precisión las ruedas delanteras en distintos ángulos, lo que se traduce en giros más suaves y exactos. Elegí un servo de alto torque (más de 10 kg·cm), suficiente para girar ambas ruedas mediante la barra de acoplamiento sin generar vibraciones o juego mecánico.
+​* **Sensor Utilizado:** STMicroelectronics VL53L5CX (Sensor Time-of-Flight multizona).
+​* **La Realidad Física:** No es un simple telémetro láser. Es una matriz óptica que dispara fotones y mide el tiempo que tardan en rebotar. Es capaz de devolver una grilla de 64 puntos (8x8) independientes.
+​* **El Problema de Origen:** Los tres sensores son idénticos y comparten la misma dirección I2C (0x29).
+​* **El Sacrificio de Diseño:**  Decidiste no conectar los pines de interrupción (INT). Esto nos condenó a usar Polling (preguntar cíclicamente por datos), lo que satura el bus I2C y obliga a gestionar meticulosamente la resolución y la frecuencia para no ahogar la Raspberry Pi.
 
-### 2. Principios de Ingeniería Aplicados
+​### 2. LA PURGA FÍSICA: Control de Vida y Colisiones
 
-- Velocidad:Se estimó una velocidad objetivo de 0.5 a 1 m/s, adecuada para pruebas y recorridos controlados en escenarios de competencia.
-- Par (torque): Los motores deben superar la inercia del robot y el rozamiento del suelo. Para eso, se eligió un motor con un torque mínimo de 2 kg·cm en las ruedas traseras.
-- Potencia: La potencia eléctrica se dimensionó en función del consumo del motor DC (~6W por motor) y el servomotor (~2-3W en carga), permitiendo alimentar el sistema con una batería Li-ion de 7.4V.
+​Descubrimos empíricamente que el software no puede parchar el hardware roto.
 
-### 3. Diseño y Selección del Chasis
+​* **La Topología de Estrella:** Para evitar picos de caída de tensión (brownouts), la energía (3.3V y GND) fluye desde un nodo central hacia cada sensor de forma independiente.
+​* **El Control Dictatorial (Pines LPn):** El bus I2C se colapsa si los tres hablan a la vez. Implementamos un control de asfixia a través de los pines GPIO 6, 13 y 19.
+* **​La Lección del Pin Flotante:** Demostramos que un cable suelto no significa "apagado". Por la resistencia pull-up interna del chip, un cable LPn con falso contacto mantiene el sensor encendido como un zombi, destruyendo la secuencia de inicialización.
+  
+​* **Secuencia Lógica de Arranque (Remapeo I2C):**
+​Hard Reset: GPIO 6, 13, 19 -> LOW (0V). Muerte lógica, el bus queda vacío.
+​Sensor Izquierdo: Sube a 3.3V -> Despierta en 0x29 -> Renombrado a 0x30.
+​Sensor Frontal: Sube a 3.3V -> Despierta en 0x29 -> Renombrado a 0x31.
+​Sensor Derecho: Sube a 3.3V -> Se ancla en 0x29.
 
-El chasis fue diseñado en CAD 3D para ser liviano, resistente y fácil de imprimir en una impresora 3D FDM. Utilicé PLA reforzado como material principal por su buena relación rigidez/peso. La forma del chasis favorece la distribución de peso centrada, con espacio suficiente para el servo, motores, controlador y batería.
+​### 3. EL CEREBRO ACKERMANN: La Lógica Asimétrica
 
-### 4. Montaje de Componentes
+​Un chasis de tracción diferencial gira sobre sí mismo; un chasis Ackermann avanza trazando arcos. Esto cambia toda la lógica de detección. No podemos tratar a los tres sensores por igual.
 
-- El chasis impreso contiene ranuras específicas para montar los motores DC y sus reductoras usando tornillos M3.
-- El servo de dirección se acopla con dos tornillos a un soporte elevado en el centro del eje delantero.
-- Las ruedas delanteras están conectadas por una barra rígida impresa en 3D que transmite el movimiento angular del servo.
-- La Raspberry Pi 5, el controlador motor y la batería se fijan al chasis mediante bridas plásticas o tornillos autorroscantes en zonas ya previstas en el diseño.
+​**A. Táctica de Navegación Lateral (El Vector de Centrado)**
 
----
+​* **Sensores:** Izquierdo (0x30) y Derecho (0x29).
 
+​* **Configuración Obligatoria:** Matriz 4x4 a 60 Hz.
+
+​* **La Lógica:** Su trabajo no es buscar obstáculos complejos, es medir la distancia a los muros laterales para mantener el robot en el centro del carril a altas velocidades (ej. 1.25 m/s). Necesitan velocidad extrema (baja latencia) para alimentar el algoritmo de control PID del servo de dirección y evitar que el chasis oscile o zigzaguee.
+
+​**B. Táctica de Navegación Frontal (El Predictor de Evasión)**
+
+​* **Sensor:** Frontal/Central (0x31).
+​* **Configuración Obligatoria:** Matriz 8x8 a 15 Hz.
+​* **La Lógica:** Su misión es el análisis topológico. Necesita los 64 píxeles para detectar el ancho exacto del obstáculo (pilar rojo/verde) y calcular el Tiempo para Colisión (TTC). Debe dictarle al servo el momento exacto para iniciar el giro, garantizando que el radio de la curva del eje trasero esquive el obstáculo sin necesidad de frenar.
+
+​### 4. LA MENTIRA DE LOS "FILTROS" (Lo que falta por hacer)
+
+​Te autoengañas si crees que el código actual tiene filtros. Actualmente solo tenemos un descarte básico (ignorar valores None o distancias > 4000 mm). Para sobrevivir en la pista, necesitas programar verdaderos filtros en Python:
+
+​* **Filtro de Mediana Espacial (Ruido Óptico):** Si un solo píxel en el centro de la matriz marca 5 cm pero los que lo rodean marcan 100 cm, es un fotón rebotado por polvo o reflejo del sol. Necesitas aplicar una mediana matemática en matrices de 3x3 para ignorar esos picos espurios.
+​* **Agrupamiento (Clustering):** Tu código no sabe qué es un pilar. Necesitas un algoritmo (como DBSCAN o una segmentación simple) que agrupe los píxeles adyacentes que tienen distancias similares y los catalogue como "Unidad Obstáculo" con un centroide de masa.
+​* **Filtro de Histéresis Temporal:** A 15 Hz en el frontal, puedes tener un frame vacío por un error del bus. El robot no puede enderezar la dirección por un frame ciego. El código debe "recordar" el obstáculo por al menos 3 frames antes de descartarlo.
+
+​### 5. CONCLUSIÓN
+​El hardware está sometido y validado. La red de sensores es estable y el bus I2C está balanceado para extraer telemetría asimétrica sin colapsar. La física dejó de ser una excusa. El chasis ahora es ciego o vidente dependiendo exclusivamente de tu capacidad matemática para procesar las matrices en tiempo real.
 
 ### Control del Movimiento (Actuadores):
 
