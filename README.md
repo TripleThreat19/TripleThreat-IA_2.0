@@ -42,21 +42,22 @@ Con este trabajo, nuestro objetivo es doble: no solo buscamos destacar en la com
 
 ## Desafío del Reto
 
-El desafío de la **World Robot Olympiad (WRO)** en la categoría de **Futuros Ingenieros** para esta temporada se enfoca en **vehículos autónomos para carreras tipo "Time Attack"**. El objetivo es diseñar, construir y programar un robot capaz de navegar una pista, superar obstáculos específicos y realizar un estacionamiento en paralelo, todo ello buscando el mejor tiempo posible.
-
+El desafío de la World Robot Olympiad (WRO) 2026 exige el desarrollo integral de un vehículo robotizado a escala que emule los sistemas de asistencia y navegación de un automóvil autónomo real. El robot debe completar tres vueltas al circuito en el menor tiempo posible, adaptándose de forma puramente reactiva a un entorno dinámico y desconocido que cambia antes de cada carrera.
 ## Problemas Clave a Resolver
 
-Hemos identificado los siguientes desafíos técnicos principales que nuestro vehículo debe superar:
+## Problemas Clave a Resolver
+Hemos desglosado el reto en tres pilares mecánicos y algorítmicos fundamentales:
 
-### 1. Navegación y Control de Alta Velocidad
-* **Seguimiento de Pista Preciso:** El robot necesita un sistema robusto para mantenerse dentro de la pista y seguir la línea con gran exactitud durante múltiples vueltas, optimizando la trayectoria para la velocidad.
-* **Control Dinámico de Velocidad:** Mantener la máxima velocidad posible sin perder el control en curvas o secciones complejas es crucial para el "Time Attack".
+### 1. Navegación en Carril y Control Dinámico de Velocidad
+* ** Seguimiento Óptimo de Trayectoria:** El vehículo debe trazar las líneas fronterizas de la pista con absoluta fluidez. No basta con mantenerse en el carril; el algoritmo debe calcular transferencias de peso y radios de giro eficientes durante las múltiples vueltas para mitigar subvirajes o sobrevirajes.
 
-### 2. Adaptación a Obstáculos Variables
+* **Control de Velocidad Adaptativo:** Implementar una lógica que module la potencia de los motores de tracción en función de la lectura de curvatura, permitiendo aceleraciones máximas en rectas largas y frenados controlados antes de entrar al vértice de los giros.
 
-#### Desafío de Muros Interiores Aleatorios:
-* **Detección de Muros en Tiempo Real:** El robot debe identificar la posición cambiante de los muros en la pista sin depender de un mapa predefinido.
-* **Evasión Eficiente:** Desarrollar algoritmos que permitan al robot rodear los muros rápidamente y sin colisionar, recalculando su ruta sobre la marcha.
+### 2. Percepción y Evasión de Obstáculos Variables (Muros y Pilares)
+
+* **Mapeo Reactivo de Muros Interiores:** La configuración de las paredes del circuito varía de manera aleatoria. El robot no puede depender de mapas estáticos pregrabados; requiere una detección de proximidad en tiempo real que calcule zonas libres de colisión sobre la marcha.
+
+* **Clasificación Visual de Señales de Tránsito:** Reconocimiento cromático de pilares (Verdes: giro a la izquierda / Rojos: giro a la derecha). El sistema de visión artificial debe filtrar ruidos de iluminación del entorno, identificar los objetos con precisión matemática y recalcular la trayectoria con el margen suficiente para evitar penalizaciones por desplazamiento de obstáculos.
 
 #### Desafío de Señales de Tráfico (Pilares Verdes/Rojos):
 * **Reconocimiento Visual de Señales:** Implementar un sistema fiable para detectar y diferenciar los pilares verdes (girar a la izquierda) y rojos (girar a la derecha).
