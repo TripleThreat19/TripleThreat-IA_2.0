@@ -87,8 +87,10 @@ El diseño mecánico se enfoca en una estructura **robusta y ligera**, optimizad
 
 ### 1.1. Componentes Clave
 
-* **Chasis**: Es la base del robot. Su diseño está pensado para soportar todos los componentes y asegurar la **rigidez estructural**. La forma y el material (generalmente polímeros resistentes o aleaciones ligeras, según el **modelo 3D**) se seleccionan según la aplicación específica del robot.
-
+* **Chasis**: Es la columna vertebral del robot, diseñada para soportar de manera rígida todos los componentes electrónicos y mecánicos bajo las fuerzas de aceleración de la competencia. Para esta temporada, hemos desarrollado un enfoque de construcción híbrido:
+  
+   La estructura base está modelada utilizando piezas y conectores LEGO, aprovechando su versatilidad y capacidad de iteración rápida. Esta base se complementa de forma estratégica con componentes de diseño propio impresos en 3D. Estas piezas personalizadas actúan como adaptadores estructurales y soportes específicos para la cámara y los sensores, garantizando una alineación milimétrica que el sistema comercial no permite y asegurando una rigidez estructural óptima sin comprometer la ligereza del vehículo.
+  
 * **Tren de Rodaje**: Se compone de un mínimo de cuatro ruedas. Las **ruedas delanteras** son las encargadas de la **dirección**, mientras que las **ruedas traseras** actúan como propulsoras, brindando el empuje necesario para el movimiento. 
 
 ---
