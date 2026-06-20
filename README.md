@@ -43,7 +43,6 @@ Con este trabajo, nuestro objetivo es doble: no solo buscamos destacar en la com
 ## Desafío del Reto
 
 El desafío de la World Robot Olympiad (WRO) 2026 exige el desarrollo integral de un vehículo robotizado a escala que emule los sistemas de asistencia y navegación de un automóvil autónomo real. El robot debe completar tres vueltas al circuito en el menor tiempo posible, adaptándose de forma puramente reactiva a un entorno dinámico y desconocido que cambia antes de cada carrera.
-## Problemas Clave a Resolver
 
 ## Problemas Clave a Resolver
 Hemos desglosado el reto en tres pilares mecánicos y algorítmicos fundamentales:
