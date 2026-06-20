@@ -5,6 +5,7 @@
 
 ![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/Triple-Threat-AI/blob/main/Logo%20del%20Equipo/Logo%20del%20Equipo.jpg)
 
+
 ---
 
 ##  Presentación del Equipo
