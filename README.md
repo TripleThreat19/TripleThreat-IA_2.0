@@ -63,15 +63,18 @@ Hemos desglosado el reto en tres pilares mecánicos y algorítmicos fundamentale
 * **Reconocimiento Visual de Señales:** Implementar un sistema fiable para detectar y diferenciar los pilares verdes (girar a la izquierda) y rojos (girar a la derecha).
 * **Decisión y Maniobra Basada en Señal:** El robot debe ajustar su posición en el carril según la señal detectada, ejecutando la maniobra con precisión para no desplazar los pilares.
 
-### 3. Maniobra de Estacionamiento en Paralelo
-* **Detección de Zona de Aparcamiento:** El robot necesita identificar el espacio de estacionamiento designado al finalizar las vueltas.
-* **Ejecución Precisa del Paralelo:** Realizar una secuencia compleja de movimientos coordinados para estacionar el vehículo correctamente en un espacio reducido.
+### 3. Secuencia de Estacionamiento en Paralelo Automatizado
 
----
+* **Anclaje y Detección de Zona de Aparcamiento:** Al finalizar el ciclo de vueltas, el robot debe escudriñar los laterales de la pista para localizar el recuadro designado.
 
-## 🎯  Nuestro Enfoque
+* **Cinemática de Maniobra en Espacio Confinado:** Ejecutar de forma secuencial y matemática una maniobra de reversa con dirección angular acotada para encajar el vehículo de forma perfecta en el espacio reducido, deteniendo el temporizador por completo de acuerdo a las normativas vigentes.
 
-Nuestro proyecto busca desarrollar un vehículo autónomo que integre **percepción avanzada del entorno, toma de decisiones dinámica y control de movimiento de alta precisión**. Para lograr esto, utilizaremos una **cámara Raspberry Pi AI** para el procesamiento visual y la detección de elementos clave en la pista, conectada a una **Raspberry Pi** que actuará como el cerebro principal para la lógica de control, la planificación de trayectoria y la ejecución de maniobras. Esta combinación nos permitirá abordar eficazmente los desafíos de navegación, adaptación a obstáculos variables y la maniobra final de estacionamiento, con el objetivo de lograr los mejores tiempos en la competición.
+## 🎯 Nuestro Enfoque Tecnológico
+Para afrontar la rigurosidad de la temporada 2026, nuestro proyecto integra una arquitectura de procesamiento en dos niveles:
+
+Subsistema de Percepción Visual: Utilizaremos una Raspberry Pi AI Camera dedicada exclusivamente a la captura de fotogramas a alta velocidad, el filtrado de color y la detección de obstáculos mediante redes neuronales optimizadas en el chip de inteligencia artificial.
+
+Cerebro de Control Central: El procesamiento lógico recaerá en una Raspberry Pi, la cual recibirá las coordenadas espaciales de la cámara, fusionará las lecturas con el resto de la arquitectura de sensores, resolverá las máquinas de estado del software y comandará el motor de dirección y tracción trasera para asegurar trayectorias milimétricas y veloces.
 
 ---
 
