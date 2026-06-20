@@ -134,14 +134,14 @@ Este diseño, meticulosamente modelado en **3D**, permite una visualización det
 
 ​Este documento consolida la arquitectura física, la táctica de software y la realidad matemática del sistema de visión construido para el chasis categoría WRO Future Engineers.
 
-​### 1. LOS OJOS DEL SISTEMA: El Hardware
+### 1. LOS OJOS DEL SISTEMA: El Hardware
 
 ​* **Sensor Utilizado:** STMicroelectronics VL53L5CX (Sensor Time-of-Flight multizona).
 ​* **La Realidad Física:** No es un simple telémetro láser. Es una matriz óptica que dispara fotones y mide el tiempo que tardan en rebotar. Es capaz de devolver una grilla de 64 puntos (8x8) independientes.
 ​* **El Problema de Origen:** Los tres sensores son idénticos y comparten la misma dirección I2C (0x29).
 ​* **El Sacrificio de Diseño:**  Decidiste no conectar los pines de interrupción (INT). Esto nos condenó a usar Polling (preguntar cíclicamente por datos), lo que satura el bus I2C y obliga a gestionar meticulosamente la resolución y la frecuencia para no ahogar la Raspberry Pi.
 
-​### 2. LA PURGA FÍSICA: Control de Vida y Colisiones
+### 2. LA PURGA FÍSICA: Control de Vida y Colisiones
 
 ​Descubrimos empíricamente que el software no puede parchar el hardware roto.
 
@@ -155,7 +155,7 @@ Este diseño, meticulosamente modelado en **3D**, permite una visualización det
 ​Sensor Frontal: Sube a 3.3V -> Despierta en 0x29 -> Renombrado a 0x31.
 ​Sensor Derecho: Sube a 3.3V -> Se ancla en 0x29.
 
-​### 3. EL CEREBRO ACKERMANN: La Lógica Asimétrica
+### 3. EL CEREBRO ACKERMANN: La Lógica Asimétrica
 
 ​Un chasis de tracción diferencial gira sobre sí mismo; un chasis Ackermann avanza trazando arcos. Esto cambia toda la lógica de detección. No podemos tratar a los tres sensores por igual.
 
@@ -173,7 +173,7 @@ Este diseño, meticulosamente modelado en **3D**, permite una visualización det
 ​* **Configuración Obligatoria:** Matriz 8x8 a 15 Hz.
 ​* **La Lógica:** Su misión es el análisis topológico. Necesita los 64 píxeles para detectar el ancho exacto del obstáculo (pilar rojo/verde) y calcular el Tiempo para Colisión (TTC). Debe dictarle al servo el momento exacto para iniciar el giro, garantizando que el radio de la curva del eje trasero esquive el obstáculo sin necesidad de frenar.
 
-​### 4. LA MENTIRA DE LOS "FILTROS" (Lo que falta por hacer)
+### 4. LA MENTIRA DE LOS "FILTROS" (Lo que falta por hacer)
 
 ​Te autoengañas si crees que el código actual tiene filtros. Actualmente solo tenemos un descarte básico (ignorar valores None o distancias > 4000 mm). Para sobrevivir en la pista, necesitas programar verdaderos filtros en Python:
 
@@ -181,7 +181,8 @@ Este diseño, meticulosamente modelado en **3D**, permite una visualización det
 ​* **Agrupamiento (Clustering):** Tu código no sabe qué es un pilar. Necesitas un algoritmo (como DBSCAN o una segmentación simple) que agrupe los píxeles adyacentes que tienen distancias similares y los catalogue como "Unidad Obstáculo" con un centroide de masa.
 ​* **Filtro de Histéresis Temporal:** A 15 Hz en el frontal, puedes tener un frame vacío por un error del bus. El robot no puede enderezar la dirección por un frame ciego. El código debe "recordar" el obstáculo por al menos 3 frames antes de descartarlo.
 
-​### 5. CONCLUSIÓN
+### 5. CONCLUSIÓN 
+
 ​El hardware está sometido y validado. La red de sensores es estable y el bus I2C está balanceado para extraer telemetría asimétrica sin colapsar. La física dejó de ser una excusa. El chasis ahora es ciego o vidente dependiendo exclusivamente de tu capacidad matemática para procesar las matrices en tiempo real.
 
 ### Control del Movimiento (Actuadores):
