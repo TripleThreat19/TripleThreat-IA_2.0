@@ -48,7 +48,7 @@ El desafío de la World Robot Olympiad (WRO) 2026 exige el desarrollo integral d
 Hemos desglosado el reto en tres pilares mecánicos y algorítmicos fundamentales:
 
 ### 1. Navegación en Carril y Control Dinámico de Velocidad
-* ** Seguimiento Óptimo de Trayectoria:** El vehículo debe trazar las líneas fronterizas de la pista con absoluta fluidez. No basta con mantenerse en el carril; el algoritmo debe calcular transferencias de peso y radios de giro eficientes durante las múltiples vueltas para mitigar subvirajes o sobrevirajes.
+* **Seguimiento Óptimo de Trayectoria:** El vehículo debe trazar las líneas fronterizas de la pista con absoluta fluidez. No basta con mantenerse en el carril; el algoritmo debe calcular transferencias de peso y radios de giro eficientes durante las múltiples vueltas para mitigar subvirajes o sobrevirajes.
 
 * **Control de Velocidad Adaptativo:** Implementar una lógica que module la potencia de los motores de tracción en función de la lectura de curvatura, permitiendo aceleraciones máximas en rectas largas y frenados controlados antes de entrar al vértice de los giros.
 
