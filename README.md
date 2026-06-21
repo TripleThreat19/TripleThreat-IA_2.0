@@ -769,6 +769,49 @@ Este entrenamiento y pipeline de visión se traduce directamente en las acciones
    * Si confirma **Pilar Rojo**, el giro se ejecuta hacia la derecha.
 3. **Control de Velocidad:** El **motor grande EV3 (tracción)** modula su potencia reduciendo ligeramente la velocidad lineal durante la evasión para garantizar que el tren trasero no desplace el pilar, manteniendo el control de lazo cerrado mediante odometría.
 
+   ---
+
+   ## 📊 Telemetría en Tiempo Real: VL53L5CX Depth Visualizer
+
+Para validar el comportamiento del bus I2C y calibrar los algoritmos de navegación reactiva, desarrollamos una herramienta de software personalizada: el **VL53L5CX Depth Visualizer**. Esta interfaz procesa y mapea en paralelo las tres matrices síncronas de $8 \times 8$ zonas (64 píxeles de profundidad por sensor) en la Raspberry Pi 5.
+
+La captura de pantalla adjunta (`Diagrama 1.jpeg`) muestra el estado del entorno capturado por el bloque tridimensional de telemetría del robot:
+
+### ⚙️ Desglose Técnico de la Telemetría por Sensor
+
+El software asigna un código cromático dinámico a los valores numéricos (distancias en milímetros) recibidos por cada una de las zonas SPAD de los sensores:
+* **Verde (Zonas Libres):** Distancias seguras y despejadas (típicamente $> 500\text{ mm}$ e inferiores a los límites físicos del carril).
+* **Naranja/Marrón (Zonas de Transición / Aproximación):** Distancias intermedias que alertan de la proximidad de muros o el inicio de una curva.
+* **Rojo (Zonas de Peligro / Obstáculo Inminente):** Distancias críticas (por debajo de $150\text{ mm} - 100\text{ mm}$) que indican una colisión inminente o la presencia directa de la base de un obstáculo.
+
+---
+
+### 🔍 Análisis de Escenario de Conducción en el Gráfico
+
+Al evaluar las lecturas síncronas de los tres sensores, el software interpreta la física del entorno para guiar los actuadores LEGO EV3:
+
+![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Other/Prueba%201.jpeg)
+
+#### 1. Flanco Izquierdo (`IZQUIERDO - 0x30`)
+* **Análisis de Datos:** La mitad inferior y el lateral derecho de la matriz están completamente saturados en rojo y naranja (valores entre $55\text{ mm}$ y $355\text{ mm}$). El cuadrante superior izquierdo se mantiene en verde ($570\text{ mm} - 720\text{ mm}$).
+* **Interpretación Cinemática:** El vehículo se encuentra extremadamente cerca del muro izquierdo o está enfrentando un obstáculo en ese flanco. El algoritmo PID detecta un error de centrado negativo masivo, obligando al **motor mediano EV3** a corregir el ángulo de dirección hacia la derecha.
+
+#### 2. Vector Frontal (`CENTRAL - 0x31`)
+* **Análisis de Datos:** El visualizador muestra una clara división vertical. El pasillo izquierdo permanece en verde libre (valores estables de $\sim 1000\text{ mm} - 1055\text{ mm}$), mientras que la mitad derecha cae a zona naranja ($340\text{ mm} - 495\text{ mm}$).
+* **Interpretación Cinemática:** El predictor de evasión detecta que el camino directo se está bloqueando por la derecha. Al combinar esto con los datos cromáticos de la cámara de IA, el software calcula el **Tiempo para la Colisión (TTC)** y planifica un arco Ackermann hacia la izquierda, aprovechando el espacio libre de un metro detectado por los píxeles verdes.
+
+#### 3. Flanco Derecho (`DERECHO - 0x29`)
+* **Análisis de Datos:** Predominancia casi absoluta de zonas verdes de alta distancia ($1200\text{ mm} - 1460\text{ mm}$), con pequeñas caídas aisladas en rojo en la periferia profunda.
+* **Interpretación Cinemática:** El flanco derecho cuenta con un amplio margen de escape libre. Esto confirma la viabilidad de la trayectoria de evasión calculada por el sensor central; el robot tiene vía libre para abrirse hacia la derecha después de limpiar el obstáculo actual.
+
+---
+
+### 🛡️ Aplicación de Filtros Matemáticos Visibles en la Grilla
+
+La interfaz gráfica nos permitió comprobar empíricamente la necesidad del **Pipeline de Filtrado en Python**:
+* **Aislamiento de Ruido (Píxeles Espurios):** En el sensor Derecho (`0x29`), se observa un píxel aislado en rojo con valor $100$ rodeado por un entorno completamente verde de $\sim 600\text{ mm}$. Esto demuestra gráficamente el éxito de nuestro **Filtro de Mediana Espacial $3 \times 3$**: el software detecta matemáticamente que ese valor de $100$ es un fotón rebotado por polvo o reflejo, y lo ignora por completo antes de enviar comandos al actuador de dirección, evitando que el robot pegue un volantazo destructivo.
+* **Estabilización del Horizonte:** La línea horizontal turquesa (`HORIZONTE 0°`) delimita el plano de cabeceo del robot. Permite al software ignorar las lecturas de los píxeles inferiores que apuntan directamente hacia el suelo cuando el chasis experimenta transferencias de peso o vibraciones al acelerar a fondo con el **motor grande EV3**.
+
 ---
 # Codigo del Robot/Solución de problemas
 
