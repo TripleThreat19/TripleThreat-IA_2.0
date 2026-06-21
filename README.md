@@ -718,7 +718,7 @@ A continuación, se presentan las figuras que ilustran el prototipo de nuestro r
 
 # *Parte de Atras*
 
-![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/Triple-Threat-AI/blob/main/V-Fotos/Atras.jpg)
+![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Vehiculo-Fotos/Atras.jpg.jpeg)
 
 ---
 
