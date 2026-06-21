@@ -738,6 +738,37 @@ A continuación, se presentan las figuras que ilustran el prototipo de nuestro r
 
 En esta sección, compartimos las metodologías y enfoques innovadores que hemos diseñado para superar los desafíos propuestos en la competencia WRO 2025.
 
+## 🧠 Documentación de Pruebas: Pipeline de Visión Artificial e Inferencia de IA
+
+Para superar con éxito el reto de obstáculos aleatorios (pilares verdes y rojos), hemos desarrollado un sistema de procesamiento visual en dos capas síncronas utilizando la **Raspberry Pi AI Camera**. 
+
+![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Vehiculo-Fotos/Izquierda.jpeg)
+
+### ⚙️ Explicación de la Lógica del Algoritmo
+
+Nuestra arquitectura de software separa la tarea de "saber DÓNDE hay un obstáculo" de la tarea de "saber QUÉ SIGNIFICA ese obstáculo". Esto optimiza los recursos de la Raspberry Pi 5 y evita falsos positivos por cambios de luz:
+
+#### 1. Capa Izquierda (IA: Blanco y Negro) - Detección de Bounding Boxes
+* **Procesamiento:** La imagen raw de la cámara se convierte a escala de grises (o luminancia pura) y es procesada por una red neuronal optimizada (ej. MobileNet-SSD / YOLO-Nano) que corre directamente en el chip acelerador de la cámara.
+* **Resultado:** El modelo de IA detecta la geometría del pilar y dibuja un cuadro delimitador (*Bounding Box*) azul. En este frame de prueba, la IA tiene una confianza del **$55\%$** confirmando que la estructura física existe.
+* **Justificación de Ingeniería:** Al procesar la detección física en blanco y negro, la IA es inmune a si el pilar es rojo, verde o si hay sombras pesadas en la pista. Solo busca la forma geométrica tridimensional del obstáculo.
+
+#### 2. Capa Derecha (Humano: Color) - Clasificación Cromática (Segmentación HSV)
+* **Procesamiento:** Una vez que la IA le dice al código las coordenadas $(X, Y)$ exactas donde se encuentra el pilar, el software recorta esa región de interés (ROI) y analiza su espectro de color utilizando el espacio de color **HSV (Hue, Saturation, Value)**.
+* **Resultado:** * Si el rango HSV detecta una saturación dominante en el espectro del **Verde**, el cuadro se torna **Rojo/Verde** en el código y se clasifica como: *Girar a la Izquierda*.
+  * Si el rango HSV detecta una saturación dominante en el espectro del **Rojo**, se clasifica como: *Girar a la Derecha*.
+
+---
+
+### 🏎️ Integración en la Toma de Decisiones del Reto de Obstáculos
+
+Este entrenamiento y pipeline de visión se traduce directamente en las acciones físicas de nuestros servomotores LEGO EV3:
+
+1. **Fusión con los Sensores Láser (VL53L5CX):** La IA detecta el pilar a la distancia $\to$ los sensores ToF miden su distancia exacta en milímetros $\to$ el software calcula el *Tiempo para la Colisión* (TTC).
+2. **Evasión Dinámica Ackermann:** * Si la capa cromática confirma **Pilar Verde**, la Raspberry Pi 5 calcula un radio de giro hacia la izquierda enviando los grados exactos al **motor mediano EV3**.
+   * Si confirma **Pilar Rojo**, el giro se ejecuta hacia la derecha.
+3. **Control de Velocidad:** El **motor grande EV3 (tracción)** modula su potencia reduciendo ligeramente la velocidad lineal durante la evasión para garantizar que el tren trasero no desplace el pilar, manteniendo el control de lazo cerrado mediante odometría.
+
 ---
 # Codigo del Robot/Solución de problemas
 
