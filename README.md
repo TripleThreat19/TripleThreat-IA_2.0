@@ -519,7 +519,7 @@ El uso de este sensor cambia por completo el juego para nuestro robot, resolvien
 * **Análisis Topológico y Predicción de Evasión:** El sensor frontal (configurado a 8x8 zonas) realiza un escaneo volumétrico. No solo detecta que hay un obstáculo enfrente, sino que identifica su ancho exacto y calcula el **Tiempo para la Colisión (TTC)**. Esto permite trazar una curva de evasión matemática suave, calculando el radio Ackermann exacto para que el tren trasero (motor grande EV3) esquive el pilar sin derrapar ni perder inercia.
 * **Filtro de Ruido Óptico por Software:** Dado que el sensor entrega una matriz de datos, implementamos filtros de mediana espacial en Python. Si un solo píxel registra un obstáculo a $5\text{ cm}$ debido al polvo en la pista, pero los 63 píxeles circundantes marcan $150\text{ cm}$, el software ignora esa lectura espuria, evitando maniobras evasivas falsas que arruinarían el tiempo de la vuelta.
 
-  ![Servomotor](https://github.com/TripleThreat19/Triple-Threat-AI/blob/main/Schemes/servomotor.jpg)
+  ![Servomotor](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Schemes/descarga.jpg)
 
 
 ---
