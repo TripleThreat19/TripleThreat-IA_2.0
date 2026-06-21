@@ -777,6 +777,8 @@ Para validar el comportamiento del bus I2C y calibrar los algoritmos de navegaci
 
 La captura de pantalla adjunta (`Diagrama 1.jpeg`) muestra el estado del entorno capturado por el bloque tridimensional de telemetría del robot:
 
+![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Other/Prueba%201.jpeg)
+
 ### ⚙️ Desglose Técnico de la Telemetría por Sensor
 
 El software asigna un código cromático dinámico a los valores numéricos (distancias en milímetros) recibidos por cada una de las zonas SPAD de los sensores:
@@ -813,7 +815,40 @@ Al evaluar las lecturas síncronas de los tres sensores, el software interpreta 
 La interfaz gráfica nos permitió comprobar empíricamente la necesidad del **Pipeline de Filtrado en Python**:
 * **Aislamiento de Ruido (Píxeles Espurios):** En el sensor Derecho (`0x29`), se observa un píxel aislado en rojo con valor $100$ rodeado por un entorno completamente verde de $\sim 600\text{ mm}$. Esto demuestra gráficamente el éxito de nuestro **Filtro de Mediana Espacial $3 \times 3$**: el software detecta matemáticamente que ese valor de $100$ es un fotón rebotado por polvo o reflejo, y lo ignora por completo antes de enviar comandos al actuador de dirección, evitando que el robot pegue un volantazo destructivo.
 * **Estabilización del Horizonte:** La línea horizontal turquesa (`HORIZONTE 0°`) delimita el plano de cabeceo del robot. Permite al software ignorar las lecturas de los píxeles inferiores que apuntan directamente hacia el suelo cuando el chasis experimenta transferencias de peso o vibraciones al acelerar a fondo con el **motor grande EV3**.
+---
+## 📐 Representación Vectorial 3D: Nube de Puntos (Point Cloud) y Mapeo Euclidiano
 
+Para llevar la telemetría al siguiente nivel, nuestro software incluye un motor de proyección geométrica en tiempo real (módulo **"Solo 3D"**). Este componente traduce las matrices numéricas abstractas de los sensores ToF en un espacio tridimensional euclidiano estructurado sobre los ejes vectoriales tradicionales:
+* **Eje X (Rojo):** Desplazamiento o coordenada lateral (Ancho de la pista).
+* **Eje Y (Verde):** Vector de profundidad o distancia lineal hacia el frente (Eje longitudinal de avance).
+* **Eje Z (Azul):** Cota de altura o cabeceo (Eje vertical de estabilidad).
+
+La captura de pantalla de nuestras pruebas dinámicas (`Diagrama 2.jpeg`) ilustra el mapa tridimensional generado desde el centro de origen del robot (coordenada $0,0,0$ donde se cruzan las líneas de los ejes):
+
+---
+
+### ⚙️ Análisis de la Geometría del Entorno en 3D
+
+El software calcula un vector de dispersión por cada zona SPAD activa de los sensores, mapeando la topología de la pista mediante dos clústeres o agrupaciones de puntos claramente diferenciados:
+
+#### 1. Nube de Puntos Verdes (Zonas Libres y de Escape)
+* **Análisis Visual:** Los puntos verdes se proyectan en el plano inferior a una distancia considerable en el eje longitudinal ($Y$). Están distribuidos en un abanico abierto que apunta hacia adelante y se desvía sutilmente hacia el cuadrante derecho.
+* **Decisión Cinemática:** Estos vectores representan el asfalto libre de obstáculos y el suelo de la pista. Al registrar distancias largas en el eje $Y$, el software de navegación confirma que existe una ventana de escape óptima justo al frente y a la derecha. El coche tiene luz verde para acelerar utilizando el **motor grande LEGO EV3**.
+
+#### 2. Nube de Puntos Amarillos (Detección de Estructuras y Muros)
+* **Análisis Visual:** Se observan dos concentraciones de puntos amarillos elevados en el espacio. Un grupo forma una línea diagonal clara en el flanco izquierdo (eje $-X$) y otro grupo se concentra de manera densa en la zona central derecha.
+* **Decisión Cinemática:** * El grupo de la izquierda mapea de forma tridimensional la pared o línea limítrofe izquierda del circuito.
+    * La densa agrupación amarilla central derecha actúa como una alerta de obstáculo inmediato. El software detecta que una estructura vertical sólida está invadiendo el carril.
+
+---
+
+### 🏎️ Utilidad de la Proyección 3D en la Navegación Ackermann
+
+Este pipeline de mapeo vectorial es el núcleo que permite al robot ejecutar una **conducción autónoma predictiva**:
+
+1.  **Cálculo de la Tangente de Giro:** Al conocer las coordenadas tridimensionales $(X, Y, Z)$ de las nubes amarillas, el algoritmo calcula el centroide de la masa del obstáculo. En lugar de dar un volantazo brusco, el programa calcula el arco o radio de giro óptimo para rodear las esferas amarillas manteniendo la mayor velocidad lineal posible en el *Time Attack*.
+2.  **Filtrado por Plano de Altura (Corte en Eje Z):** Al proyectar los datos en 3D, el software discrimina la altura de los objetos. Si los puntos se ubican muy abajo en el eje $Z$, el robot sabe que es el suelo y no un obstáculo. Esto evita que el vehículo interprete las imperfecciones superficiales o las uniones de la lona de la pista como muros, eliminando frenados fantasma.
+3.  **Sincronización con la Cámara de IA:** Mientras la **Raspberry Pi AI Camera** encuadra el pilar en un plano bidimensional para clasificar su color, esta nube de puntos en 3D le otorga al robot la "profundidad de campo", permitiendo calcular con precisión milimétrica la trayectoria de evasión que debe ejecutar el **motor mediano LEGO EV3** de la dirección.
 ---
 # Codigo del Robot/Solución de problemas
 
