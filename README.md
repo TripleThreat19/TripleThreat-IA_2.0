@@ -790,7 +790,9 @@ El software asigna un código cromático dinámico a los valores numéricos (dis
 
 Al evaluar las lecturas síncronas de los tres sensores, el software interpreta la física del entorno para guiar los actuadores LEGO EV3:
 
-![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Other/Prueba%201.jpeg)
+![Logo del Equipo Triple Threat](![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Other/Prueba%201.jpeg)
+)
+)
 
 #### 1. Flanco Izquierdo (`IZQUIERDO - 0x30`)
 * **Análisis de Datos:** La mitad inferior y el lateral derecho de la matriz están completamente saturados en rojo y naranja (valores entre $55\text{ mm}$ y $355\text{ mm}$). El cuadrante superior izquierdo se mantiene en verde ($570\text{ mm} - 720\text{ mm}$).
