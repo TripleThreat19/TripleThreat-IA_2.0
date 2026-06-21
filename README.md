@@ -491,7 +491,7 @@ Ambos motores (Grande y Mediano) operan como un sistema de **lazo cerrado** grac
 ### 🎯 Conclusión para el Proyecto
 La integración de estos dos servomotores EV3 simplifica drásticamente el desarrollo del software de control en la Raspberry Pi 5. En lugar de estimar a ciegas cuánto se mueve el robot, la lectura matemática de sus encoders integrados nos permite programar trayectorias curvas perfectas, asegurando que el vehículo interactúe con el circuito de la WRO de forma controlada, repetible y efectiva.
 
-![Servomotor](https://github.com/TripleThreat19/Triple-Threat-AI/blob/main/Schemes/servomotor.jpg)
+![Motores EV3](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Schemes/Motores%20EV3.jpg)
 
 ---
 
