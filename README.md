@@ -742,7 +742,7 @@ En esta sección, compartimos las metodologías y enfoques innovadores que hemos
 
 Para superar con éxito el reto de obstáculos aleatorios (pilares verdes y rojos), hemos desarrollado un sistema de procesamiento visual en dos capas síncronas utilizando la **Raspberry Pi AI Camera**. 
 
-![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Vehiculo-Fotos/Izquierda.jpeg)
+![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Other/Prueba%201.jpeg)
 
 ### ⚙️ Explicación de la Lógica del Algoritmo
 
