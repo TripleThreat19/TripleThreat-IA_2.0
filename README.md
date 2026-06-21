@@ -849,6 +849,45 @@ Este pipeline de mapeo vectorial es el núcleo que permite al robot ejecutar una
 2.  **Filtrado por Plano de Altura (Corte en Eje Z):** Al proyectar los datos en 3D, el software discrimina la altura de los objetos. Si los puntos se ubican muy abajo en el eje $Z$, el robot sabe que es el suelo y no un obstáculo. Esto evita que el vehículo interprete las imperfecciones superficiales o las uniones de la lona de la pista como muros, eliminando frenados fantasma.
 3.  **Sincronización con la Cámara de IA:** Mientras la **Raspberry Pi AI Camera** encuadra el pilar en un plano bidimensional para clasificar su color, esta nube de puntos en 3D le otorga al robot la "profundidad de campo", permitiendo calcular con precisión milimétrica la trayectoria de evasión que debe ejecutar el **motor mediano LEGO EV3** de la dirección.
 ---
+
+## 🎯 Optimización del Bus: Regiones de Interés (ROI) y Máscara de Horizonte
+
+Para maximizar la eficiencia del procesamiento en la Raspberry Pi 5 y evitar la saturación en el muestreo por *Polling*, nuestro software implementa un algoritmo de aislamiento por **Regiones de Interés (ROI)**. Como se observa en la interfaz de telemetría (`Diagrama 3.jpeg`), no procesamos los 64 puntos de manera indiscriminada; aplicamos una **Máscara de Horizonte Matemático** que descarta dinámicamente las zonas irrelevantes para la conducción.
+
+
+![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Other/Diagrama%202.jpeg)
+![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Other/Diagrama%202.jpeg)
+
+
+### 📊 Código de Estados y Umbrales de Proximidad
+
+Utilizando los datos de calibración del sistema (`Leyenda.jpeg`), el firmware clasifica las distancias críticas en tres umbrales de control cinemático, ignorando las lecturas que caen fuera del plano de carrera:
+
+* **🟩 Zona Libre ($> 50\text{ cm}$):** Trayectoria limpia. Permite al algoritmo de lazo cerrado incrementar el ciclo de trabajo (PWM) en el **motor grande LEGO EV3** para ganar velocidad lineal.
+* **🟧 Precaución ($25 - 50\text{ cm}$):** Indica la aproximación a un límite de pista o pilar. Activa el estado de alerta en el código para preparar una maniobra de evasión.
+* **🟥 Obstáculo ($< 25\text{ cm}$):** Umbral crítico de colisión inminente. Dicta una acción evasiva de alta prioridad o una corrección angular máxima al **motor mediano LEGO EV3**.
+* **⬛ Suelo (Filtrado por Software):** Bloques marcados como `ROI` inactivos en gris oscuro. Son las zonas que apuntan debajo de la línea del horizonte; el software las ignora para evitar falsos positivos causados por imperfecciones en la superficie de la pista.
+
+---
+
+### 🔍 Análisis de la Escena Dinámica y Comportamiento Cinematográfico
+
+En este cuadro de telemetría específico, el robot se encuentra en una condición de **curva cerrada o desvío crítico hacia la derecha**, interpretado de la siguiente manera por el software:
+
+#### 1. Sensor Izquierdo (`0x30`) -> Estado: Obstáculo Crítico (`83 mm`)
+La máscara de horizonte ha aislado una franja horizontal de 4 zonas activas justo por encima de la línea del suelo. El sensor registra valores críticos entre $85\text{ mm}$ y $115\text{ mm}$ (Saturación en **Rojo**).
+* **Acción del Robot:** El flanco izquierdo está colapsado contra el muro de la pista. El control de centrado PID calcula un error de desvío masivo, enviando una instrucción de actuación inmediata para alejar el morro del vehículo de esa pared.
+
+#### 2. Sensor Central (`0x31`) -> Estado: Vía Libre Abierta (`1060 mm`)
+El sensor frontal confirma un pasillo completamente despejado a lo largo de su zona activa (lecturas estables de **Verde** entre $1195\text{ mm}$ y $1200\text{ mm}$). 
+* **Acción del Robot:** Indica que el carril central está completamente abierto a un metro de distancia. La Raspberry Pi 5 valida que no hay obstáculos frontales directos interfiriendo con el avance longitudinal.
+
+#### 3. Sensor Derecho (`0x29`) -> Estado: Precaución / Muro Lateral (`394 mm`)
+Las zonas ROI activas se colorean de manera homogénea en **Naranja**, registrando lecturas constantes de $\sim 395\text{ mm} - 400\text{ mm}$.
+* **Acción del Robot:** El robot detecta de forma geométrica el muro del lado derecho a una distancia segura de transición. 
+
+### 🏎️ Conclusión del Diagnóstico de Conducción
+Al fusionar las tres lecturas filtradas por el horizonte, el algoritmo determina que el robot está navegando en un pasillo donde el lado izquierdo está muy cerca ($83\text{ mm}$) y el derecho ofrece un margen intermedio ($394\text{ mm}$). El sistema ordena al **motor mediano EV3** girar sutilmente hacia la derecha para centrarse en el pasillo libre de $1.2\text{ metros}$ detectado por el sensor central, estabilizando la trayectoria de forma predictiva.
 # Codigo del Robot/Solución de problemas
 
 
