@@ -792,7 +792,7 @@ El software asigna un código cromático dinámico a los valores numéricos (dis
 
 Al evaluar las lecturas síncronas de los tres sensores, el software interpreta la física del entorno para guiar los actuadores LEGO EV3:
 
-![Logo del Equipo Triple Threat](![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Other/Diagrama%201.jpeg)
+![Logo del Equipo Triple Threat](![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Other/Diagrama%202.jpeg)
 )
 )
 
