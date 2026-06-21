@@ -247,21 +247,54 @@ Nuestra arquitectura de control de movilidad demuestra una clara separación de 
 
 Al motor grande (tracción) se le modula la potencia y velocidad de forma dinámica (acelerando a fondo en rectas y aplicando freno motor antes de entrar al vértice de los giros) para exprimir al máximo el tiempo de vuelta sin derrapar.
 
-* **Puente H:** Funciona como la interfaz de potencia entre la Raspberry Pi 5 y los motores Makeblock 180. Permite a la Pi controlar la dirección y la velocidad de los motores (mediante PWM) con señales de bajo voltaje.
+* **Puente H:** Funciona como la interfaz de potencia entre la Raspberry Pi 5 y los motores grande y mediano del EV3,  Permite a la Pi controlar la dirección y la velocidad de los motores (mediante PWM) con señales de bajo voltaje.
 
 
 Percepción del Entorno (Sensores):
 
-Raspberry Pi AI Camera: Este es el principal sensor visual del robot. Conectada a la Raspberry Pi 5, nos permite implementar visión por computadora y algoritmos de Inteligencia Artificial. La cámara procesa el entorno para:
+## 📷 Subsistema de Percepción Visual y Telemetría Láser
 
-Detección y Reconocimiento de Objetos: Identifica obstáculos, marcas o elementos clave en el entorno.
+Para garantizar una navegación de alta velocidad en el formato *Time Attack*, el vehículo utiliza un sistema de percepción híbrido que combina visión artificial por transferencia de redes neuronales y un arreglo de sensores de rango láser activo.
 
-Seguimiento de Trayectorias: Percibe líneas o caminos a seguir.
+### 1. Raspberry Pi AI Camera (Sensor Visual Principal)
+Conectada de forma nativa a la Raspberry Pi 5, esta unidad constituye el núcleo de la percepción semántica y cromática del entorno. Su procesamiento se divide en tres tareas críticas:
+* **Reconocimiento Cromático y Clasificación:** Identificación en tiempo real de los pilares de señalización (Verde/Rojo) mediante el aislamiento de espacios de color y filtrado de contornos.
+* **Segmentación de Trayectoria:** Detección predictiva de los límites de las líneas de la pista para anticipar la curvatura del circuito antes de que el chasis ingrese a ella.
+* **Inferencia en el Borde (Edge AI):** Al contar con un chip de aceleración de inteligencia artificial integrado en la propia cámara, la Raspberry Pi 5 queda libre de la carga del procesamiento de imágenes raw, permitiéndole usar el hilo principal de la CPU exclusivamente para la lógica de control.
 
-Análisis Espacial: Comprende la profundidad y la disposición de los elementos.
-La potente Raspberry Pi 5 puede procesar estos datos de imagen en tiempo real, permitiendo al robot tomar decisiones informadas sobre su navegación y acciones.
+### 2. Arreglo Multizona de Sensores ToF VL53L5CX (Sensores Láser Activos)
+Como complemento crítico a la cámara de IA, implementamos una arquitectura de **Triple LiDAR de estado sólido** utilizando tres sensores *Time-of-Flight* STMicroelectronics VL53L5CX (configurados asimétricamente en direcciones I2C `0x29`, `0x30` y `0x31`). 
+* **Mapeo de Proximidad:** Mientras la cámara clasifica *qué* objetos hay en la pista, este arreglo láser genera una matriz de profundidad geométrica de hasta 64 puntos independientes (grilla de 8x8) para medir con precisión milimétrica *a qué distancia exacta* se encuentran los muros y obstáculos, blindando al robot contra cambios imprevistos en la iluminación ambiental.
 
-Software de Control: Todo el sistema lo gestiona el software que se ejecuta en la Raspberry Pi 5, desarrollado principalmente en Python. Este software integra las lecturas de los codificadores y la cámara, procesa la información y genera las señales de control para el Puente H y el servomotor, coordinando así todos los aspectos del movimiento y la interacción del robot con su entorno.
+---
+
+## 💻 Arquitectura de Software y Lógica de Control
+
+Todo el ecosistema de hardware es gobernado centralizadamente por un firmware modular desarrollado en **Python**, el cual se ejecuta sobre el sistema operativo de la Raspberry Pi 5. 
+
+El pipeline de ejecución del software sigue una arquitectura orientada a objetos que se divide en tres etapas cíclicas:
+
+
+```
+
+[Adquisición de Datos] -> (AI Camera + Matriz ToF I2C + Encoders EV3)
+|
+v
+[Pipeline de Filtrado] -> (Mediana Espacial + Clustering + Histéresis Temporal)
+|
+v
+[Lazo de Control PID]  -> (Cálculo de Error de Trayectoria y Radio Ackermann)
+|
+v
+[Actuación Física]     -> (Comandos de Grados/Velocidad a Motores LEGO EV3)
+
+```
+
+### Funciones Principales del Software:
+
+1.  **Fusión de Sensores (Sensor Fusion):** El script principal sincroniza las coordenadas de los obstáculos detectados por la **Raspberry Pi AI Camera** con las lecturas de distancia de los sensores **VL53L5CX**, validando la existencia real de un pilar antes de iniciar una maniobra.
+2.    **Odometría de Lazo Cerrado:** Lee constantemente los *encoders* ópticos internos integrados en el **motor grande LEGO EV3 (tracción trasera)**. Esto permite calcular por integración matemática la distancia recorrida y ajustar dinámicamente la velocidad lineal para no perder tracción.
+3..  **Control Cinemático Ackermann:** Calcula el error de centrado respecto al carril y ejecuta un algoritmo de control PID para enviar comandos de posición angular precisos al **motor mediano LEGO EV3 (dirección delantera)**, erradicando holguras y asegurando trayectorias fluidas a velocidades competitivas.
 
 ---
 
