@@ -855,7 +855,7 @@ Este pipeline de mapeo vectorial es el núcleo que permite al robot ejecutar una
 Para maximizar la eficiencia del procesamiento en la Raspberry Pi 5 y evitar la saturación en el muestreo por *Polling*, nuestro software implementa un algoritmo de aislamiento por **Regiones de Interés (ROI)**. Como se observa en la interfaz de telemetría (`Diagrama 3.jpeg`), no procesamos los 64 puntos de manera indiscriminada; aplicamos una **Máscara de Horizonte Matemático** que descarta dinámicamente las zonas irrelevantes para la conducción.
 
 
-![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Other/Diagrama%202.jpeg)
+![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Other/Diagrama%203.jpeg)
 ![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Other/Diagrama%202.jpeg)
 
 
