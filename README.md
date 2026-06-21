@@ -312,65 +312,33 @@ Es importante destacar que este diseño en particular está pensado para las rue
 
 ---
 
-### Desglose del Proceso de Montaje
-
-![Motor Codificador Optico Makeblock 180](https://github.com/TripleThreat19/Triple-Threat-AI/blob/main/Armado%20del%20Vehiculo/imagen%202.png)
-
-El montaje de este subsistema se concibe en una secuencia lógica que asegura la correcta funcionalidad y alineación de las partes:
-
-1.  **Eje y Rodamiento:**
-    El punto de partida es el **eje**, un elemento central sobre el cual se montará el **rodamiento**. Este rodamiento es una pieza ingenieril clave, cuya función principal es minimizar la fricción, permitiendo que el eje (y, por ende, la rueda) gire con la mayor suavidad posible y con un mínimo desgaste.
-
-2.  **Soporte del Rodamiento:**
-    Una vez que el rodamiento está posicionado en el eje, ambos se alojan dentro del **soporte de rodamiento**. Este soporte se compone de dos mitades que se unen, encapsulando y asegurando el rodamiento en su lugar. La unión de estas dos secciones se logra mediante el uso de **tornillos y tuercas más pequeños**, garantizando que el rodamiento quede firmemente contenido, pero con libertad para girar sobre el eje.
-
-3.  **Fijación de la Rueda:**
-    Con el eje y el conjunto de rodamiento/soporte listos, la **rueda** se desliza sobre el extremo libre del eje. Para asegurar que la rueda no se desplace ni se suelte durante el funcionamiento de nuestro robot, se utiliza una **tuerca adicional** que se rosca firmemente en el extremo del eje, fijando la rueda en su posición adecuada.
-
-4.  **Integración en el Chasis del Robot:**
-    Finalmente, este ensamblaje completo (compuesto por la rueda, el eje, el rodamiento y su soporte) se integra directamente en la estructura principal de nuestro robot. El diseño del **soporte de rodamiento** incluye puntos de montaje que permiten su fijación segura al chasis o a los brazos de suspensión, si los tuviera. Esta integración no solo proporciona el anclaje físico, sino que también establece el punto de pivote exacto para la rotación de la rueda, siendo esencial para la dinámica de movimiento de nuestro robot.
-
----
-
 # 🤖 Distribución de Componentes en el Chasis del Robot ⚙️
 
 Nuestro chasis ha sido meticulosamente diseñado para una distribución específica de componentes, buscando optimizar el centro de gravedad y facilitar el proceso de montaje. A continuación, detallamos la ubicación estratégica de los elementos principales:
 
 ---
 
-### Colocación de Componentes Clave en la Primera Placa:
+### Colocación de Componentes Clave:
 
-![Motor Codificador Optico Makeblock 180](https://github.com/TripleThreat19/Triple-Threat-AI/blob/main/Models/Elemento%2010.jpg)
-
-* **Motor:** Se ubica y fija en la parte trasera del chasis. Esta posición estratégica ayuda a concentrar el peso, optimizando la tracción y el balance general del robot.
-
-* **Baterías (Pilas):** Se colocan centralmente en el chasis y se aseguran mediante tornillos. Esta disposición es crucial para lograr una distribución equilibrada del peso, lo que mejora significativamente la estabilidad y la maniobrabilidad del vehículo.
-
-* **Regulador de Voltaje (Regulador):** Aunque no es visible en la disposición general, se situará típicamente cerca de las baterías. Su función es regular el voltaje de entrada para alimentar de forma estable y segura el resto de la electrónica de control del robot.
-
-* **Puente H:** Este componente clave se colocará lo más próximo al motor posible. Esta cercanía minimiza la longitud del cableado, lo que reduce las pérdidas de energía y optimiza el control de dirección y velocidad del motor.
-
-* **Servomotor: Este componente se ubicará en la parte delantera del chasis. Su función principal es controlar el mecanismo de dirección de las ruedas delanteras, permitiendo al robot cambiar de trayectoria con precisión
----
+* **Motor Grande LEGO EV3 (Propulsión Trasera):** Se ubica y fija firmemente en la sección posterior del esqueleto de LEGO. Esta posición concentra el peso sobre el eje motriz, optimizando la tracción de las ruedas traseras y maximizando el agarre en las rectas de alta velocidad para evitar derrapes.
+* **Motor Mediano LEGO EV3 (Actuación de Dirección):** Se sitúa en la parte frontal del chasis, acoplado directamente al mecanismo de barra de dirección. Su diseño compacto y peso reducido permiten una respuesta angular inmediata sobre el eje delantero sin sobrecargar el morro del vehículo.
+* **Baterías (Fuente de Energía):** Se colocan de forma simétrica en el centro geométrico del chasis, aseguradas mediante los soportes personalizados impresos en 3D. Esta disposición es crucial para mantener un centro de gravedad bajo y una distribución equilibrada del peso ($50/50$ entre ambos ejes), mejorando drásticamente la estabilidad en curvas.
+* **Regulador de Voltaje (UBEC / Buck Converter):** Situado típicamente en la zona central cerca de las baterías. Su función es reducir y estabilizar el voltaje de la batería principal (por ejemplo, a $5\text{V}$ constantes) para alimentar de forma segura la Raspberry Pi 5 y los sensores ToF, protegiendo la electrónica de control contra picos de corriente.
+* **Puente H (Driver de Motores):** Este componente clave se monta lo más próximo posible a los motores LEGO EV3. Su cercanía minimiza la longitud del cableado, lo que reduce la resistencia eléctrica, evita caídas de tensión y optimiza el control de velocidad (PWM) y sentido de giro dictado por la Raspberry Pi 5.
+* **Soporte Frontal Vertical (Cámara y Módulo):** Esta estructura, parte del segundo piso o conectada a él, está diseñada específicamente para montar la cámara y su módulo adicional en la parte frontal elevada. Su posición estratégica garantiza un campo de visión despejado y alto, crucial para tareas como la detección de obstáculos, navegación y mapeo ambiental.
+* **Raspberry PI:** se destinará el espacio para la Raspberry Pi. Esta ubicación es fundamental para mantener el "cerebro" del robot (Raspberry Pi) y su fuente de energía suplementaria (Pilas) accesibles, a la vez que se optimiza el cableado y se minimiza la altura total, contribuyendo al centro de gravedad general del conjunto.
 
 
 🤖 Ensamblaje del Robot: Distribución de Componentes en el Chasis ⚙️
 Nuestro chasis ha sido meticulosamente diseñado para una distribución estratégica de componentes, buscando optimizar el centro de gravedad, la funcionalidad y la facilidad de montaje. A continuación, detallamos la ubicación pensada para los elementos clave:
+
+
 
 ---
 
 Disposición de Componentes de Percepción y Procesamiento (Segundo Piso):
 
 Estos componentes vitales para la inteligencia y operación del robot se alojarán en una placa superior o "segundo piso", que se montará sobre el chasis principal, aprovechando estructuras como las mostradas en "Elemento 11.jpg".
-
----
-
-![Motor Codificador Optico Makeblock 180](https://github.com/TripleThreat19/Triple-Threat-AI/blob/main/Models/Elemento%2011.jpg))
-
-
-Soporte Frontal Vertical (Cámara y Módulo): Esta estructura, parte del segundo piso o conectada a él, está diseñada específicamente para montar la cámara y su módulo adicional en la parte frontal elevada. Su posición estratégica garantiza un campo de visión despejado y alto, crucial para tareas como la detección de obstáculos, navegación y mapeo ambiental.
-
-Espacio Inferior del Segundo Piso (Raspberry Pi y Puente H): En la zona inferior de este segundo nivel (o sobre la superficie de esta placa superior) se destinará el espacio para el Powerbank y la Raspberry Pi. Esta ubicación es fundamental para mantener el "cerebro" del robot (Raspberry Pi) y su fuente de energía suplementaria (Powerbank) accesibles, a la vez que se optimiza el cableado y se minimiza la altura total, contribuyendo al centro de gravedad general del conjunto.
 
 ---
 
@@ -381,13 +349,13 @@ Espacio Inferior del Segundo Piso (Raspberry Pi y Puente H): En la zona inferior
 Nuestro sistema electrónico, que impulsa y controla cada movimiento de nuestro robot, está cuidadosamente ensamblado con los siguientes elementos clave:
 -	Raspberry Pi 5
 -	Raspberry Pi AI Camera
--	Servomotor
--	Motor Modificador Óptico Makeblock 180
+-	Motor Mediano EV3
+-	Motor Grande EV3
 -	Puente H
 - Regulador de Voltaje
 -	Baterías
 -	Switch
--	Power Bank 
+-	STMicroelectronics VL53L5CX 
 
   
 A continuación, se presentará el Diagrama de Cableado que ilustra cómo estos componentes se interconectan para funcionar en armonía.
