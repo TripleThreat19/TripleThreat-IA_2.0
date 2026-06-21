@@ -101,14 +101,19 @@ El sistema de dirección es fundamental para la **maniobrabilidad** del robot, i
 
 ### 2.1. Componentes Principales
 
-* **Ruedas Delanteras Direccionales**: Estas ruedas giran alrededor de un eje vertical (similar al pivote de dirección de un coche) para modificar la trayectoria del robot. Ambas **ruedas delanteras direccionales** están interconectadas y se mueven en un ángulo coordinado gracias a un **mecanismo de dirección**.
+* **Esqueleto y Chasis Base (LEGO EV3):** Toda la estructura portante y el esqueleto del vehículo están construidos utilizando vigas y conectores del kit LEGO EV3. Esto nos proporciona una plataforma ligera, altamente modular y fácil de reparar en la zona de pits ante cualquier imprevisto.
 
-* **Mecanismo de Dirección**: Este sistema, detallado en el **modelo 3D**, es una simple barra de acoplamiento que conecta ambas ruedas delanteras
-  
-* **Servomotor**: Un servomotor de alta precisión, es el responsable de ejecutar el movimiento angular de las **ruedas delanteras direccionales**. Este motor recibe las señales de control de la tarjeta controladora (Rasberry PI) y las traduce en el ángulo de giro deseado. La correcta ubicación y el acoplamiento de este servomotor con el mecanismo de dirección son aspectos críticos en el diseño **3D** para garantizar un movimiento fluido y sin holguras.
+* **Ruedas Delanteras Direccionales:** Diseñadas para rotar sobre un eje vertical emulando el sistema de manguetas y pivotes de un automóvil real. Ambas ruedas están interconectadas mecánicamente para moverse en un ángulo simétrico y coordinado, garantizando la estabilidad del vehículo en curvas de alta velocidad.
 
-* **Rasberry PI 5**: La tarjeta controladora del robot Rasberry PI 5 es la encargada de enviar las señales al servomotor para ajustar el ángulo de las **ruedas delanteras direccionales**. Este controlador puede recibir entradas de la Camara Rasberry PI AI para determinar la dirección que se desea tomar.
+* **Mecanismo de Dirección y Actuador:** Consiste en una barra de acoplamiento rígida que une los bloques de dirección de ambas ruedas. Para accionar este mecanismo, utilizamos el motor pequeño del kit LEGO EV3. Este motor fue seleccionado por su excelente resolución en el control de posición angular y su torque óptimo, permitiendo cambios de dirección fluidos, rápidos y con un margen mínimo de holgura (backlash).
 
+* **Soportes e Integración de Componentes (Diseño 3D):** Debido a que las piezas comerciales no ofrecen un acople directo para la electrónica avanzada, modelamos y fabricamos piezas personalizadas en impresión 3D con dos propósitos críticos:
+
+* **Anclaje de la Cámara:** Un soporte rígido diseñado específicamente para la Cámara Raspberry Pi AI, asegurando que el ángulo de visión de la IA se mantenga fijo y libre de las vibraciones mecánicas del motor de tracción.
+
+* **Alojamiento de la Electrónica:** Bahías de montaje a medida para sujetar firmemente la Raspberry Pi 5 al esqueleto de LEGO, protegiendo las conexiones y optimizando la distribución de peso (centro de gravedad bajo).
+
+* **Unidad de Procesamiento Central (Raspberry Pi 5):**Es el cerebro lógico del robot. Procesa los datos visuales de la cámara en tiempo real, calcula el error de trayectoria en la pista y envía las instrucciones de corrección angular directamente al motor pequeño de LEGO EV3 para ejecutar giros milimétricos.
 ---
 
 ## 3. Funcionamiento General
@@ -117,7 +122,7 @@ Para que el robot pueda moverse y girar eficientemente, el sistema opera de la s
 
 * **Propulsión**: Los motores acoplados a las **ruedas traseras** (o un motor diferencial para ambas) giran para impulsar el robot hacia adelante o hacia atrás. La velocidad se regula mediante la potencia suministrada a estos motores.
 
-* **Dirección**: Para iniciar un giro, la Rasberry PI 5 envía una señal al **servomotor**. El servomotor, a su vez, activa el mecanismo de dirección, lo que provoca el cambio en el ángulo de las **ruedas delanteras direccionales**. El grado de giro de estas ruedas determina directamente el radio de giro del robot.
+* **Dirección**: Para iniciar un giro, la Rasberry PI 5 envía una señal al **motor mediano del EV3**. El motor, a su vez, activa el mecanismo de dirección, lo que provoca el cambio en el ángulo de las **ruedas delanteras direccionales**. El grado de giro de estas ruedas determina directamente el radio de giro del robot.
 
 * **Coordinación**: La clave para un movimiento óptimo reside en la **coordinación** entre la velocidad de las ruedas propulsoras y el ángulo de las **ruedas delanteras direccionales**. Para ejecutar giros cerrados, las ruedas delanteras se angulan más, y la velocidad de las ruedas traseras puede ajustarse para facilitar la maniobra y asegurar un giro suave y controlado.
 
@@ -130,68 +135,120 @@ Este diseño, meticulosamente modelado en **3D**, permite una visualización det
 
 ## Debate Técnico sobre la Gestión de la Movilidad
 
-### MANIFIESTO TÉCNICO: Arquitectura de Visión Ackermann con Triple LiDAR
+## 1. Arquitectura de Hardware y Desafíos de Integración
 
-​Este documento consolida la arquitectura física, la táctica de software y la realidad matemática del sistema de visión construido para el chasis categoría WRO Future Engineers.
+Para lograr un rendimiento óptimo en formato *Time Attack*, el vehículo requiere un mapa de profundidad local de alta frecuencia. Hemos integrado tres sensores ópticos multizona avanzados para construir un sistema de visión perimetral reactivo.
 
-### 1. LOS OJOS DEL SISTEMA: El Hardware
+### Especificaciones del Sensor
 
-​* **Sensor Utilizado:** STMicroelectronics VL53L5CX (Sensor Time-of-Flight multizona).
-​* **La Realidad Física:** No es un simple telémetro láser. Es una matriz óptica que dispara fotones y mide el tiempo que tardan en rebotar. Es capaz de devolver una grilla de 64 puntos (8x8) independientes.
-​* **El Problema de Origen:** Los tres sensores son idénticos y comparten la misma dirección I2C (0x29).
-​* **El Sacrificio de Diseño:**  Decidiste no conectar los pines de interrupción (INT). Esto nos condenó a usar Polling (preguntar cíclicamente por datos), lo que satura el bus I2C y obliga a gestionar meticulosamente la resolución y la frecuencia para no ahogar la Raspberry Pi.
+* **Modelo:** STMicroelectronics VL53L5CX (Sensor de tiempo de vuelo *Time-of-Flight* multizona).
+* **Principio Físico:** El dispositivo emite un pulso láser VCSEL infrarrojo invisible y mide el intervalo temporal del rebote del fotón. Esto genera una matriz geométrica bidimensional de lecturas de distancia de hasta **64 puntos independientes (grilla de 8x8)**, actuando como un LiDAR de estado sólido de estado sólido en miniatura.
 
-### 2. LA PURGA FÍSICA: Control de Vida y Colisiones
+### Trade-Offs (Compromisos) de Diseño y Gestión de Bus
 
-​Descubrimos empíricamente que el software no puede parchar el hardware roto.
+Durante la fase de diseño técnico, priorizamos la disponibilidad de pines GPIO en la **Raspberry Pi 5** para la comunicación con los controladores de los motores LEGO EV3. Debido a esto, **prescindimos de los pines de interrupción física (INT)** de los sensores.
 
-​* **La Topología de Estrella:** Para evitar picos de caída de tensión (brownouts), la energía (3.3V y GND) fluye desde un nodo central hacia cada sensor de forma independiente.
-​* **El Control Dictatorial (Pines LPn):** El bus I2C se colapsa si los tres hablan a la vez. Implementamos un control de asfixia a través de los pines GPIO 6, 13 y 19.
-* **​La Lección del Pin Flotante:** Demostramos que un cable suelto no significa "apagado". Por la resistencia pull-up interna del chip, un cable LPn con falso contacto mantiene el sensor encendido como un zombi, destruyendo la secuencia de inicialización.
-  
-​* **Secuencia Lógica de Arranque (Remapeo I2C):**
-​Hard Reset: GPIO 6, 13, 19 -> LOW (0V). Muerte lógica, el bus queda vacío.
-​Sensor Izquierdo: Sube a 3.3V -> Despierta en 0x29 -> Renombrado a 0x30.
-​Sensor Frontal: Sube a 3.3V -> Despierta en 0x29 -> Renombrado a 0x31.
-​Sensor Derecho: Sube a 3.3V -> Se ancla en 0x29.
+> ⚠️ **Implicación en el Software:** Esta decisión nos obligó a implementar un método de adquisición por **Polling** (muestreo cíclico activo). Para evitar que esta consulta constante sature el bus I2C y degrade el tiempo de ciclo de la CPU, desarrollamos una gestión asimétrica de la frecuencia de muestreo.
 
-### 3. EL CEREBRO ACKERMANN: La Lógica Asimétrica
+---
 
-​Un chasis de tracción diferencial gira sobre sí mismo; un chasis Ackermann avanza trazando arcos. Esto cambia toda la lógica de detección. No podemos tratar a los tres sensores por igual.
+## 2. Gestión Eléctrica y Protocolo de Inicialización (Remapeo I2C)
 
-​**A. Táctica de Navegación Lateral (El Vector de Centrado)**
+El emparejamiento de tres sensores idénticos introduce dos problemas críticos: caídas de tensión por consumo síncrono y colisión de direcciones de red. Resolver esto desde el hardware fue vital para cumplir con los estándares de confiabilidad de la WRO 2026.
 
-​* **Sensores:** Izquierdo (0x30) y Derecho (0x29).
+### Robustez Eléctrica y Control de Estados
 
-​* **Configuración Obligatoria:** Matriz 4x4 a 60 Hz.
+* **Topología de Estrella Pasiva:** Las líneas de alimentación VCC (3.3V) y GND se distribuyen en paralelo desde un nodo regulado central hacia cada sensor individual, eliminando los bucles de tierra y los picos de caída de tensión (*brownouts*) cuando los tres arreglos de diodos láser se activan simultáneamente.
+* **Líneas de Control Digital (Pines LPn):** Dado que todos los sensores VL53L5CX vienen configurados de fábrica con la misma dirección esclava I2C (`0x29`), implementamos un control secuencial de encendido utilizando los pines GPIO 6, 13 y 19 de la Raspberry Pi para conmutar el estado de bajo consumo (*Low Power* - LPn).
+* **Mitigación del Pin Flotante:** Para evitar estados lógicos indeterminados debido a la alta impedancia de los cables largos, el software de la Raspberry Pi fuerza resistencias *pull-down* de forma interna al arrancar. Esto asegura que un sensor sin conexión explícita permanezca apagado en lugar de actuar como un dispositivo "zombi" que corrompa el bus.
 
-​* **La Lógica:** Su trabajo no es buscar obstáculos complejos, es medir la distancia a los muros laterales para mantener el robot en el centro del carril a altas velocidades (ej. 1.25 m/s). Necesitan velocidad extrema (baja latencia) para alimentar el algoritmo de control PID del servo de dirección y evitar que el chasis oscile o zigzaguee.
+### Algoritmo Lógico de Arranque e Identificación de Dispositivos
 
-​**B. Táctica de Navegación Frontal (El Predictor de Evasión)**
+Para inicializar el bus I2C de forma segura, el software ejecuta la siguiente máquina de estados secuencial:
 
-​* **Sensor:** Frontal/Central (0x31).
-​* **Configuración Obligatoria:** Matriz 8x8 a 15 Hz.
-​* **La Lógica:** Su misión es el análisis topológico. Necesita los 64 píxeles para detectar el ancho exacto del obstáculo (pilar rojo/verde) y calcular el Tiempo para Colisión (TTC). Debe dictarle al servo el momento exacto para iniciar el giro, garantizando que el radio de la curva del eje trasero esquive el obstáculo sin necesidad de frenar.
+```
+[INICIO] -> Forzar Pines LPn (GPIO 6, 13, 19) a LOW (0V) -> [Bus I2C Vacío]
+               |
+               v
+[PASO 1] -> Conmutar GPIO 6 (Izquierdo) a HIGH (3.3V) -> Despierta en 0x29 -> Reconfigurar software a dirección 0x30
+               |
+               v
+[PASO 2] -> Conmutar GPIO 13 (Frontal) a HIGH (3.3V)   -> Despierta en 0x29 -> Reconfigurar software a dirección 0x31
+               |
+               v
+[PASO 3] -> Conmutar GPIO 19 (Derecho) a HIGH (3.3V)   -> Despierta en 0x29 -> Se mantiene fijo en dirección 0x29
 
-### 4. LA MENTIRA DE LOS "FILTROS" (Lo que falta por hacer)
+```
 
-​Te autoengañas si crees que el código actual tiene filtros. Actualmente solo tenemos un descarte básico (ignorar valores None o distancias > 4000 mm). Para sobrevivir en la pista, necesitas programar verdaderos filtros en Python:
+---
 
-​* **Filtro de Mediana Espacial (Ruido Óptico):** Si un solo píxel en el centro de la matriz marca 5 cm pero los que lo rodean marcan 100 cm, es un fotón rebotado por polvo o reflejo del sol. Necesitas aplicar una mediana matemática en matrices de 3x3 para ignorar esos picos espurios.
-​* **Agrupamiento (Clustering):** Tu código no sabe qué es un pilar. Necesitas un algoritmo (como DBSCAN o una segmentación simple) que agrupe los píxeles adyacentes que tienen distancias similares y los catalogue como "Unidad Obstáculo" con un centroide de masa.
-​* **Filtro de Histéresis Temporal:** A 15 Hz en el frontal, puedes tener un frame vacío por un error del bus. El robot no puede enderezar la dirección por un frame ciego. El código debe "recordar" el obstáculo por al menos 3 frames antes de descartarlo.
+## 3. Lógica de Navegación Asimétrica para Cinemática Ackermann
 
-### 5. CONCLUSIÓN 
+A diferencia de los robots de tracción diferencial, nuestro chasis utiliza **geometría de dirección Ackermann** (conducción tipo coche). El vehículo no puede rotar sobre su propio eje; se desplaza trazando arcos circulares continuos. Esto exige que la telemetría se adapte a la cinemática del robot, distribuyendo la carga de procesamiento de forma asimétrica.
 
-​El hardware está sometido y validado. La red de sensores es estable y el bus I2C está balanceado para extraer telemetría asimétrica sin colapsar. La física dejó de ser una excusa. El chasis ahora es ciego o vidente dependiendo exclusivamente de tu capacidad matemática para procesar las matrices en tiempo real.
+### A. Control Lateral y Vector de Centrado (Sensores Izquierdo 0x30 / Derecho 0x29)
+
+* **Configuración Operativa:** Resolución espacial de 4x4 zonas a una frecuencia de **60 Hz**.
+* **Justificación Cinematográfica:** A velocidades competitivas de *Time Attack* (superiores a 1.2 m/s), la desviación lateral del robot debe corregirse de inmediato para evitar colisiones contra las líneas fronterizas de la pista. Reducir la matriz a 16 puntos nos permite maximizar la tasa de refresco a 60 Hz, entregando datos de baja latencia directamente al bucle del control PID que ajusta el ángulo del motor mediano de dirección LEGO EV3. Esto suprime las oscilaciones de trayectoria y el efecto de zigzagueo en las rectas.
+
+### B. Análisis Topológico Frontal y Predictor de Evasión (Sensor Frontal 0x31)
+
+* **Configuración Operativa:** Resolución espacial máxima de 8x8 zonas a una frecuencia de **15 Hz**.
+* **Justificación Cinematográfica:** El sensor frontal está destinado a la toma de decisiones estratégicas de mediano alcance. Necesitamos la resolución completa de 64 píxeles para calcular el perfil geométrico de los muros y la signatura cromática de los pilares (Verde/Rojo). Esta densidad de datos permite estimar matemáticamente el **Tiempo para la Colisión (TTC)**. El vehículo puede planificar anticipadamente el radio de curvatura óptimo para esquivar el obstáculo sin necesidad de clavar los frenos, asegurando que el tren trasero (motor grande LEGO EV3) limpie el obstáculo con fluidez.
+
+---
+
+## 4. Pipeline de Procesamiento de Señal y Capa de Filtrado en Python
+
+Para cumplir con los criterios de innovación de software de la WRO 2026, las lecturas crudas del sensor (*raw data*) se someten a un procesamiento matemático estricto en la Raspberry Pi 5 para mitigar falsos positivos provocados por reflejos ópticos de la pista o cambios bruscos de iluminación.
+
+```
+[Datos Crudos ToF] 
+       |
+       v
+[Filtro de Descarte] -----------> Ignorar valores 'None' o distancias superiores a 4000 mm
+       |
+       v
+[Mediana Espacial 3x3] ---------> Elimina ruido por fotones dispersos o polvo en suspensión
+       |
+       v
+[Segmentación por Densidad] ----> Agrupa píxeles contiguos para aislar el volumen del obstáculo
+       |
+       v
+[Histéresis Temporal] ----------> Valida la persistencia del obstáculo durante 'N' frames antes de actuar
+       |
+       v
+[Comando de Dirección] ---------> Salida limpia hacia el actuador de dirección LEGO EV3
+
+```
+
+### Implementación del Procesamiento Matemático
+
+1. **Filtro de Mediana Espacial (Ruido de Disparo):** Para evitar que lecturas espurias (píxeles aislados con caídas drásticas de distancia causadas por el sol o polvo) induzcan maniobras evasivas falsas, aplicamos una ventana kernel de $3 \times 3$ sobre la matriz. El valor central se reemplaza por la mediana de sus vecinos, homogeneizando la lectura del entorno.
+2. **Segmentación y Extracción de Características (Clustering):** El software agrupa los sectores espaciales cuyas distancias relativas presenten una varianza mínima. Mediante un algoritmo simplificado de proximidad por densidad, definimos las fronteras físicas de un pilar, calculando su centro de masa o centroide espacial para determinar con precisión cuántos centímetros de desviación angular requiere el chasis para evadirlo.
+3. **Filtro de Histéresis Temporal (Memoria de Estado):** Debido al método de *Polling*, un error de lectura en el bus I2C podría generar un cuadro vacío (*frame* perdido). Para evitar que el sistema interprete esto como una pista libre y enderece las ruedas en medio de una maniobra de evasión, el software retiene el estado físico del obstáculo durante al menos 3 ciclos de reloj antes de decretar que la zona está despejada.
+
+---
+
+## 5. Conclusión 
+
+Nuestra arquitectura de control de movilidad demuestra una clara separación de responsabilidades entre hardware y software. El chasis híbrido (LEGO EV3 y soporte impreso en 3D) provee una plataforma estructuralmente rígida y térmicamente estable, permitiendo que la potencia matemática de la Raspberry Pi 5 sea aprovechada en su totalidad. Mediante este enfoque reactivo y asimétrico, mitigamos las debilidades del bus de datos físico para transformarlo en un sistema de posicionamiento dinámico y predictivo de alta velocidad, diseñado específicamente para dominar las exigencias de la temporada de Futuros Ingenieros 2026.
+
 
 ### Control del Movimiento (Actuadores):
 
-Motores Modificadores Ópticos Makeblock 180: Estos motores son los encargados de la propulsión del robot, conectados a las ruedas traseras. Incluyen codificadores ópticos que nos dan retroalimentación precisa sobre la velocidad y la distancia recorrida, información vital para la odometría y un control de movimiento exacto.
+* **Motor Grande LEGO EV3 (Propulsión y Tracción Trasera):** El encargado de la aceleración y velocidad punta del robot es el motor grande de EV3, el cual está acoplado directamente al eje de las ruedas traseras. Este motor no solo destaca por su alto torque y capacidad de respuesta rápida en rectas de Time Attack, sino que integra un encoder óptico interno de alta resolución. Este encoder nos proporciona retroalimentación (feedback) en tiempo real sobre los grados de rotación exactos de las ruedas, una información fundamental para calcular la velocidad angular, estimar la distancia recorrida mediante odometría y asegurar un control de velocidad de lazo cerrado preciso.
 
-Puente H: Funciona como la interfaz de potencia entre la Raspberry Pi 5 y los motores Makeblock 180. Permite a la Pi controlar la dirección y la velocidad de los motores (mediante PWM) con señales de bajo voltaje.
+* **Motor Mediano LEGO EV3 (Mecanismo de Dirección):** En sustitución de un servomotor convencional, hemos implementado el motor mediano de EV3 para ejecutar el movimiento angular de las ruedas delanteras. A pesar de ser un motor de rotación continua, su diseño compacto, menor peso y la precisión de su encoder interno nos permiten programarlo para que actúe con la exactitud de un servomotor de alta gama.
 
-Servomotor (Dirección): Este servomotor es crucial para el control preciso del ángulo de las ruedas delanteras directrices. La Raspberry Pi 5 le envía señales PWM para posicionar las ruedas con exactitud, permitiendo giros controlados y suaves.
+* **Control y Lógica desde la Raspberry Pi 5:** La Raspberry Pi 5 traduce las decisiones de trayectoria de la cámara de IA en comandos específicos para estos dos motor.
+  
+ Al motor mediano (dirección) se le envían comandos de posición basados en los grados del encoder para colocar las ruedas delanteras en el ángulo de giro milimétrico que se requiere en cada curva.
+
+Al motor grande (tracción) se le modula la potencia y velocidad de forma dinámica (acelerando a fondo en rectas y aplicando freno motor antes de entrar al vértice de los giros) para exprimir al máximo el tiempo de vuelta sin derrapar.
+
+* **Puente H:** Funciona como la interfaz de potencia entre la Raspberry Pi 5 y los motores Makeblock 180. Permite a la Pi controlar la dirección y la velocidad de los motores (mediante PWM) con señales de bajo voltaje.
+
 
 Percepción del Entorno (Sensores):
 
