@@ -550,29 +550,6 @@ En esencia, el regulador es fundamental para la **fiabilidad y la prolongación 
 ![Regulador de Voltaje](https://github.com/TripleThreat19/Triple-Threat-AI/blob/main/Schemes/Regulador%20de%20voltaje%201.jpg)
 
 
-#### ⚙️ Motor Codificador Óptico Makeblock 180
-
-El **Motor Codificador Óptico Makeblock 180** es un tipo de motor DC (corriente continua) que incorpora un **codificador óptico** en su diseño. Esto lo convierte en un componente clave para aplicaciones de robótica y automatización donde se requiere un **control de movimiento preciso y con retroalimentación**.
-
----
-**_Características Destacadas:_**
-
-* **Motor DC con Engranajes:** Esencialmente, es un motor de corriente continua con una caja reductora de engranajes (con una relación de reducción de 39.6). Esto significa que el motor, aunque gira a altas RPM internamente (hasta 14,000 RPM sin carga), su eje de salida gira a una velocidad mucho menor (350 RPM sin carga), pero con un **par (torque) significativamente mayor** (800 g·cm nominal, 5 kg·cm de arranque). Este alto torque es fundamental para mover ruedas o cargar estructuras en un robot.
-* **Codificador Óptico Integrado:** Esta es la característica más importante y lo que lo diferencia de un motor DC estándar. Un codificador óptico utiliza un disco ranurado y un sensor de luz para detectar el movimiento rotatorio del eje del motor. A medida que el disco gira, interrumpe un haz de luz, generando pulsos eléctricos.
-* **Precisión de Detección:** El codificador óptico del Makeblock 180 tiene una **precisión de detección de 1°**, lo que permite un control muy fino.
-* **Retroalimentación:** Al contar estos pulsos, un microcontrolador (como la Raspberry Pi) puede saber con precisión la **posición angular exacta del eje del motor, la velocidad de rotación y la distancia recorrida** (si está conectado a una rueda).
-* **Construcción Robusta y Reducción de Ruido:** Makeblock ha diseñado este motor con materiales personalizados que ayudan a reducir el ruido durante su funcionamiento. Además, cuenta con un eje de salida de acero para una mayor durabilidad y una caja de engranajes de materiales POM (polioximetileno) que son antiabrasivos.
-
----
-
-El **Motor Codificador Óptico Makeblock 180** es fundamental para nuestro robot porque ofrece un **control de movimiento preciso y con retroalimentación**. Su codificador óptico permite a la Raspberry Pi 5 conocer exactamente la posición, velocidad y distancia recorrida, lo cual es indispensable para una **navegación autónoma exacta, control de movimiento fino** (giros y paradas precisas), detección de bloqueos y una **mayor fiabilidad y repetibilidad** en sus desplazamientos. Transforma al robot en un sistema de **navegación inteligente y confiable**.
-
-![Motor Codificador Optico Makeblock 180](https://github.com/TripleThreat19/Triple-Threat-AI/blob/main/Schemes/motor%20codificador%20optico%20Makeblock%20180.jpg)
-
-
-
----
-
 ---
 
 ### 💡 Componentes Clave del Vehículo
