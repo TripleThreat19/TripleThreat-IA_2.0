@@ -453,26 +453,76 @@ La **Raspberry Pi AI Camera** es fundamental para nuestro robot porque permite l
 
 ---
 
-Servomotor
-Un servomotor es un tipo de motor especial que se diferencia de los motores de corriente continua (DC) o alterna (AC) convencionales por su capacidad de controlar con precisión su posición angular, velocidad y, en algunos casos, su aceleración. Piensa en él como un motor que no solo gira, sino que sabe exactamente dónde está y puede ir a una posición específica y mantenerla, incluso si hay una fuerza externa que intenta moverlo.
+## ⚙️ Análisis Técnico de Actuadores: Servomotores LEGO EV3
+
+A diferencia de los motores de corriente continua (DC) convencionales que giran libremente al recibir voltaje, los motores del kit LEGO EV3 funcionan bajo el principio de **servomotores de alta precisión**. Tienen la capacidad de controlar con exactitud su posición angular, velocidad y aceleración, sabiendo exactamente en qué posición están y manteniendo ese ángulo interactuando de forma reactiva ante fuerzas externas.
+
+### 🔄 Arquitectura Interna Común (Sistema de Lazo Cerrado)
+
+Ambos motores (Grande y Mediano) operan como un sistema de **lazo cerrado** gracias a sus componentes internos:
+1. **Motor DC Interno:** El actuador electromecánico central que genera el movimiento.
+2. **Tren de Engranajes Reductores:** Un sistema de piñones que reduce las RPM nativas del motor pero multiplica drásticamente su torque (fuerza de giro), permitiendo movimientos controlados y minimizando el juego mecánico (*backlash*).
+3. **Encoder Óptico Integrado (Sensor de Posición):** Es el tacómetro digital interno que mide constantemente los grados exactos de rotación del eje. Envía esta retroalimentación (*feedback*) en tiempo real a la Raspberry Pi 5, la cual compara la posición actual con la deseada y ajusta la energía para corregir cualquier desviación al instante.
 
 ---
 
-**_Características Principales:_**
+### Motor Grande LEGO EV3 (Servomotor de Propulsión)
 
-* **Control de Posición Preciso:** Esta es su característica principal. A diferencia de un motor DC que gira libremente cuando se le aplica voltaje, un servomotor puede ser instruido para moverse a un ángulo específico (por ejemplo, 45 grados, 90 grados, etc.) y mantenerse allí.
-* **Sistema de Lazo Cerrado:** Un servomotor siempre forma parte de un sistema de "lazo cerrado". Esto significa que tiene un mecanismo de retroalimentación (generalmente un potenciómetro o un encoder) que constantemente informa al controlador sobre la posición actual del eje del motor. El controlador compara esta posición con la posición deseada y ajusta la energía al motor para corregir cualquier desviación.
-* **Componentes Internos:**
-    * **Motor DC o AC:** El motor eléctrico real que genera el movimiento.
-    * **Engranajes reductores:** Un sistema de engranajes que reduce la velocidad del motor pero aumenta su torque (fuerza de giro), permitiendo movimientos más controlados y con mayor fuerza.
-    * **Sensor de Posición (Potenciómetro/Encoder):** Mide la posición actual del eje del motor y envía esta información al controlador.
-* **Tipos de Señal de Control:** Generalmente se controlan mediante señales de Modulación por Ancho de Pulso (PWM). La duración del pulso determina la posición a la que debe moverse el servomotor.
+* **Rol en el Robot:** Tracción y velocidad lineal (Eje Trasero).
+* **Control de Posición y Velocidad:** Aunque se utiliza principalmente para el desplazamiento continuo del vehículo, el encoder interno nos permite implementar un **control PID de velocidad**. Esto asegura que el motor mantenga las RPM exactas calculadas por el algoritmo de *Time Attack*, sin importar si el robot está subiendo la rampa o tomando una curva cerrada.
+* **Importancia de la Retroalimentación:** Los datos del encoder se procesan en Python para realizar **odometría**. Al saber los grados exactos que ha girado el motor grande, el software calcula la distancia en milímetros que el robot ha recorrido en la pista, vital para planificar el momento justo de frenado o el inicio de la maniobra de estacionamiento.
+
+###   Motor Mediano LEGO EV3 (Servomotor de Dirección)
+
+* **Rol en el Robot:** Control Angular del Mecanismo Ackermann (Eje Delantero).
+* **Control de Posición Preciso:** Este motor sustituye al servomotor comercial clásico. Aprovechamos su alta resolución para mover las ruedas delanteras a ángulos específicos (ej. $-15^\circ$ para esquivar un pilar izquierdo, $+22^\circ$ para una curva cerrada a la derecha). Una vez alcanzado el ángulo, el lazo cerrado bloquea el motor en esa posición, resistiendo las fuerzas de fricción de las ruedas contra el suelo.
+* **Ventaja Dinámica:** Al ser más ligero y compacto que el motor grande, reduce la inercia en el tren delantero, permitiendo correcciones de trayectoria sumamente rápidas generadas por los frames de la Raspberry Pi AI Camera a alta frecuencia ($60\text{ Hz}$).
 
 ---
 
-El **servomotor** es crucial para nuestro robot porque permite un **control de posición angular preciso**, a diferencia de los motores DC simples. Esto es fundamental para que el robot realice **movimientos exactos y articulados**, como orientar cámaras o manipular objetos. Su sistema de lazo cerrado y el control por PWM simplifican la programación de movimientos complejos, asegurando que el robot interactúe con su entorno de forma controlada y efectiva.
+### 📊 Tabla Comparativa de Aplicación en Competencia
+
+| Característica | Motor Grande EV3 (Tracción) | Motor Mediano EV3 (Dirección) |
+| :--- | :--- | :--- |
+| **Prioridad de Control** | Velocidad constante y Torque elevado. | Posición angular milimétrica y Rapidez. |
+| **Uso del Encoder** | Odometría, cálculo de distancia y frenado dinámico. | Alineación precisa de manguetas y control PID de centrado. |
+| **Comportamiento Cinemático** | Modulación de potencia en rectas y curvas. | Retención rígida del ángulo de giro seleccionado. |
+
+### 🎯 Conclusión para el Proyecto
+La integración de estos dos servomotores EV3 simplifica drásticamente el desarrollo del software de control en la Raspberry Pi 5. En lugar de estimar a ciegas cuánto se mueve el robot, la lectura matemática de sus encoders integrados nos permite programar trayectorias curvas perfectas, asegurando que el vehículo interactúe con el circuito de la WRO de forma controlada, repetible y efectiva.
 
 ![Servomotor](https://github.com/TripleThreat19/Triple-Threat-AI/blob/main/Schemes/servomotor.jpg)
+
+---
+
+###  Sensor Láser Multizona STMicroelectronics VL53L5CX (Sensor de Distancia Activo)
+
+A diferencia de los sensores ultrasónicos convencionales o los telémetros láser simples que solo miden un punto central, el **VL53L5CX** funciona como un LiDAR de estado sólido en miniatura. Este componente es fundamental para dotar al robot de una percepción espacial tridimensional y reactiva en tiempo real.
+
+#### Características Principales y Funcionamiento:
+* **Matriz de Profundidad Bidimensional:** El sensor cuenta con una óptica avanzada que divide su campo de visión (FoV) en una grilla de zonas independientes. Puede configurarse en una matriz de **4x4 zonas (a 60 Hz)** para máxima velocidad de respuesta, o de **8x8 zonas (a 15 Hz)** para máxima resolución espacial (64 puntos de lectura simultáneos).
+* **Principio de Tiempo de Vuelo (Time-of-Flight - ToF):** Cada zona dispara ráfagas de fotones infrarrojos invisibles a través de un emisor VCSEL y mide el tiempo exacto que tardan en rebotar y regresar al receptor. Como la velocidad de la luz es constante, el sensor calcula la distancia matemática exacta de cada píxel de forma independiente.
+* **Inmunidad al Entorno:** Al ser un sensor de luz activa (emite su propio mapa de luz), su precisión no depende del color de los obstáculos ni de los reflejos del suelo, lo que lo hace inmune a los cambios de iluminación ambiental de la pista de la WRO.
+
+#### Componentes Internos:
+1. **Emisor Láser VCSEL:** Diodo láser de emisión superficial con cavidad vertical que emite luz infrarroja segura para la vista ($940\text{ nm}$).
+2. **Matriz de Receptores SPAD:** Diodos de avalancha de fotón único capaces de capturar el regreso de los fotones a nivel de picosegundos.
+3. **Microcontrolador Integrado (Firmware de Bajo Nivel):** Un chip interno que procesa los tiempos de vuelo, aplica algoritmos de calibración y devuelve las distancias limpias en milímetros a través del bus I2C.
+
+---
+
+### 📌 Rol del Sensor Láser en la Estrategia del Vehículo
+
+El uso de este sensor cambia por completo el juego para nuestro robot, resolviendo problemas de navegación complejos mediante software en Python:
+
+* **Control en Lazo Cerrado de Distancia Lateral:** Al ubicar sensores en los flancos (Izquierdo y Derecho) configurados a **60 Hz**, creamos un lazo cerrado de centrado. El software en la Raspberry Pi 5 mide constantemente la distancia a los muros laterales, calcula el error de desvío y ajusta el motor mediano de dirección inmediatamente para mantener el robot perfectamente alineado en el carril.
+* **Análisis Topológico y Predicción de Evasión:** El sensor frontal (configurado a 8x8 zonas) realiza un escaneo volumétrico. No solo detecta que hay un obstáculo enfrente, sino que identifica su ancho exacto y calcula el **Tiempo para la Colisión (TTC)**. Esto permite trazar una curva de evasión matemática suave, calculando el radio Ackermann exacto para que el tren trasero (motor grande EV3) esquive el pilar sin derrapar ni perder inercia.
+* **Filtro de Ruido Óptico por Software:** Dado que el sensor entrega una matriz de datos, implementamos filtros de mediana espacial en Python. Si un solo píxel registra un obstáculo a $5\text{ cm}$ debido al polvo en la pista, pero los 63 píxeles circundantes marcan $150\text{ cm}$, el software ignora esa lectura espuria, evitando maniobras evasivas falsas que arruinarían el tiempo de la vuelta.
+
+  ![Servomotor](https://github.com/TripleThreat19/Triple-Threat-AI/blob/main/Schemes/servomotor.jpg)
+
+
+---
 
 #### ⚡ Regulador de Voltaje
 
@@ -557,48 +607,74 @@ Este documento detalla la estrategia de gestión de potencia y el sistema de con
 
 ## Gestión de Energía y Sensores
 
-Esta sección aborda cómo el vehículo gestiona su energía y sensores para navegar con precisión y eficiencia en los desafíos del entorno. Se detalla la fuente de alimentación, los sensores utilizados, su justificación técnica y el impacto de estos en el comportamiento del robot, así como un resumen del consumo energético.
+# 🔋 Gestión de Energía y Distribución Eléctrica
 
-## 1. Fuente de Energía
-El robot utiliza dos fuentes de energía diferenciadas:
+Esta sección aborda cómo el vehículo gestiona su potencia y recursos eléctricos para alimentar tanto los sistemas de procesamiento de alta densidad como los actuadores mecánicos, garantizando la máxima eficiencia y estabilidad en pruebas de *Time Attack*.
 
-- Power Bank USB de 5V 3A: Alimenta exclusivamente a la Raspberry Pi 5, garantizando una alimentación estable y continua. Esta opción es práctica, segura y evita la necesidad de reguladores externos para la Raspberry.
+---
 
-- Batería Li-ion de 7.4V (mínimo 2000 mAh): Alimenta directamente el motor DC con encoder (propulsión) y el servomotor SG90 (dirección). Esta batería está conectada a través de un módulo de control de motor (usando GPIO y PWM desde la Raspberry Pi).
+## 1. Arquitectura de Fuente de Energía Unificada
 
-Este enfoque separa las cargas de procesamiento y movimiento, evitando caídas de tensión en la Raspberry Pi debido a picos de corriente de los motores.
+Para optimizar el peso total del chasis y maximizar la aceleración, hemos unificado el sistema eléctrico utilizando **exclusivamente un paquete de baterías de Litio (Li-ion / LiPo)** de alta descarga. Toda la potencia del robot se centraliza en esta fuente, distribuyéndose en dos lazos de corriente independientes mediante hardware:
 
-Regulador de Voltaje (Buck Converter): Como la Raspberry Pi 5 y la Raspberry Pi AI Camera operan a 5V, y nuestras baterías de litio tienen un voltaje nominal más alto, un regulador de voltaje DC-DC (buck converter) es indispensable. Este componente reduce y estabiliza el voltaje de las baterías a los 5V requeridos, protegiendo la electrónica sensible de sobretensiones y fluctuaciones.
+### Componentes de la Red de Potencia
 
-Switch Principal: Un interruptor físico nos permite encender y apagar el robot de forma segura, controlando el flujo general de energía desde las baterías.
+* **Paquete de Baterías de Litio Principal:** Suministra energía directa de alta corriente. Al alimentar tanto la lógica como los motores desde una sola fuente, reducimos drásticamente la masa del vehículo, lo que mejora la relación peso-potencia crítica para la WRO 2026.
+* **Regulador de Voltaje de Alta Eficiencia (Buck Converter / UBEC):** Dado que las baterías de litio entregan un voltaje nominal variable y superior a los $5\text{V}$, este componente DC-DC es indispensable. Actúa como un escudo electrónico reduciendo y estabilizando el voltaje a exactamente **5V con un mínimo de 5A**, alimentando de forma limpia y continua a la **Raspberry Pi 5** y a la **Raspberry Pi AI Camera**. Esto protege la electrónica sensible contra sobretensiones y fluctuaciones térmicas.
+* **Módulo de Aislamiento y Puente H (Etapa de Potencia):** Conectado directamente a la línea de voltaje nativo de la batería de litio para suministrar la fuerza requerida por el **motor grande** (propulsión) y el **motor mediano** (dirección) de LEGO EV3. Las señales lógicas PWM enviadas desde los GPIO de la Raspberry Pi 5 controlan este módulo, manteniendo un aislamiento eléctrico relativo.
+* **Switch Principal de Seguridad:** Un interruptor físico de alta corriente colocado en serie con el borne positivo de la batería. Permite el corte inmediato o el encendido seguro de todo el vehículo, controlando el flujo general de energía tanto para la etapa de potencia como para la de control.
 
+---
+
+## ⚡ Mitigación de Caídas de Tensión (*Brownouts*)
+
+El mayor desafío técnico de utilizar una sola fuente de energía para motores y computación es el riesgo de que la Raspberry Pi 5 se reinicie debido a la demanda masiva de corriente cuando el motor grande de LEGO EV3 arranca o frena bruscamente. Para solucionar esto sin añadir un Power Bank, implementamos la siguiente estrategia de hardware:
+
+1. **Filtrado por Condensadores (Capacitores de Desacoplo):** Añadimos condensadores electrolíticos en paralelo a la entrada del regulador de voltaje. Estos actúan como reservas de energía instantánea, absorbiendo las caídas de tensión milimétricas provocadas por los motores.
+2. **Líneas Separadas desde el Nodo Central:** El cableado de potencia se estructuró en una topología de estrella. Los motores y el regulador Buck nacen del mismo conector de la batería pero corren por cables independientes, evitando que el ruido eléctrico de alta frecuencia de las escobillas de los motores interfiera con el bus I2C de los sensores láser o la estabilidad de la CPU.
+   
 ## 2. Sensores
-El sistema utiliza múltiples sensores y módulos para recopilar información del entorno:
+## 📡 Subsistema de Percepción y Captura de Datos
 
-- Cámara Picamera2: Captura video en tiempo real, analiza el entorno mediante visión artificial y detecta colores (negro, azul y naranja) en formato HSV para identificar líneas de guía, obstáculos y realizar conteo de vueltas.
+El vehículo integra una red de sensores ópticos y de telemetría mecánica que recopilan información del entorno en tiempo real. Esta configuración permite fusionar datos visuales, geométricos y de rotación para tomar decisiones de navegación con máxima precisión.
 
-- Encoder en motor DC: Permite medir la rotación del motor, ayudando al conteo de vueltas.
-El sistema tiene un pin asignado para un encoder, pero la funcionalidad de conteo de vueltas actual se basa puramente en la visión por computadora.
+### 1. Raspberry Pi AI Camera (Percepción Semántica)
 
-- Servomotor SG90: Aunque es un actuador, responde constantemente a los comandos del sistema basados en los datos provenientes de los sensores para ejecutar giros precisos.
+Es el sensor visual principal del robot. A diferencia de las cámaras estándar, cuenta con un acelerador de redes neuronales integrado que procesa el video en tiempo real directamente en el hardware periférico, reduciendo la carga de la CPU de la Raspberry Pi 5.
+* **Misión Crítica:** Analiza el entorno mediante visión computacional, segmentando los carriles y aislando los espacios de color en formato HSV para identificar y clasificar las señales de tráfico (pilares verdes y rojos). Además, asiste en la detección de zonas clave como el recuadro de estacionamiento en paralelo.
+
+### 2. Arreglo de Sensores Láser ToF VL53L5CX (Percepción Métrica)
+
+Este sistema actúa como un LiDAR de estado sólido multizona de alto rendimiento que complementa la visión de la cámara.
+* **Misión Crítica:** Proporciona un mapa de profundidad bidimensional mediante una matriz de hasta $8 \times 8$ zonas independientes. Su función es medir con exactitud matemática la distancia milimétrica hacia los muros laterales y frontales. Al emitir su propia luz infrarroja, permite que el robot mantenga un control PID de centrado perfecto e inmune a los cambios de luz ambiental del recinto de competencia.
+
+### 3. Encoders Ópticos Internos (Motores LEGO EV3)
+
+Hemos eliminado los sensores rotacionales externos acoplados a motores DC convencionales. En su lugar, aprovechamos los **tacómetros digitales (encoders) integrados** tanto en el motor grande (propulsión) como en el motor mediano (dirección) del kit LEGO EV3.
+* **Misión Crítica en Motor Grande (Tracción):** Mide los grados de rotación exactos de las ruedas traseras. El software en Python procesa estos datos para ejecutar algoritmos de **odometría de lazo cerrado**, calculando la distancia recorrida en la pista para planificar con exactitud la frenada, el conteo de vueltas de respaldo y la secuencia de reversa para el estacionamiento en paralelo.
+* **Misión Crítica en Motor Mediano (Dirección):** Proporciona retroalimentación instantánea sobre la posición angular real de las manguetas delanteras. Esto permite saber con precisión milimétrica el ángulo de giro del sistema Ackermann en cada frame, corrigiendo cualquier desviación provocada por la fricción del suelo.
 
   ## 3. Consumo de Energía
-Se estima el siguiente consumo energético:
+## 3. Estimación del Consumo Energético Unificado
 
-- Raspberry Pi 5 (desde Power Bank): ~2.5 A @ 5V
-- Motor DC: ~0.8 A @ 7.4V
-- Servomotor SG90: ~150 mA @ 5V
-- Cámara Picamera2: ~250 mA @ 5V (alimentada por la Raspberry)
+Dado que el vehículo ha migrado a un sistema de alimentación único basado exclusivamente en baterías de Litio, todo el consumo se consolida en una sola línea de potencia. El consumo estimado bajo condiciones de máxima exigencia en pista (*Time Attack*) es el siguiente:
 
-El sistema completo requiere una batería con una capacidad mínima de 15 Wh para operar durante una sesión completa.
+* **Raspberry Pi 5 + Raspberry Pi AI Camera:** $\sim 2.7\text{ A @ 5V}$ (Aproximadamente $13.5\text{ W}$ en picos de inferencia de IA y procesamiento matemático continuo).
+* **Motor Grande LEGO EV3 (Tracción Trasera):** $\sim 0.12\text{ A}$ (en vacío) hasta $\sim 2.0\text{ A}$ (corriente de arranque/bloqueo en aceleración máxima) @ $7.4\text{V} - 9.0\text{V}$.
+* **Motor Mediano LEGO EV3 (Dirección Delantera):** $\sim 0.08\text{ A}$ (en vacío) hasta $\sim 1.2\text{ A}$ (picos de corrección rápida a 60 Hz) @ $7.4\text{V} - 9.0\text{V}$.
+* **Arreglo de 3 Sensores Láser ToF VL53L5CX:** $\sim 120\text{ mA @ 5V}$ (en total, alimentados a través del bus regulado).
 
-## 4. Justificación de Selección de Componentes
-Los componentes fueron seleccionados por su eficiencia y compatibilidad:
+> 📊 **Cálculo de Autonomía:** El consumo promedio estimado del sistema en carrera oscila entre los $18\text{ W}$ y $25\text{ W}$. Para cumplir holgadamente con las sesiones de prueba y las mangas oficiales de la WRO 2026, el paquete de baterías de litio seleccionado entrega una capacidad mínima de **$22\text{ Wh}$**, garantizando un funcionamiento estable y sin caídas de tensión por más de 45 minutos continuos.
 
-- El motor DC con encoder permite una propulsión controlada y precisa, útil para detectar vueltas sin sensores adicionales.
-- El servomotor SG90 proporciona dirección precisa y rápida con bajo consumo energético.
-- La cámara permite reducir la cantidad de sensores al detectar colores y obstáculos simultáneamente mediante visión artificial.
+---
 
+## 4. Justificación Técnica de Selección de Componentes
+
+La selección del hardware obedece a criterios estrictos de precisión cinemática, robustez mecánica y velocidad de procesamiento, eliminando módulos genéricos por soluciones de grado de ingeniería:
+
+* **Motores LEGO EV3 (Grande y Mediano):** Se seleccionaron por encima de los motores DC y servomotores convencionales debido a sus **encoders ópticos internos de alta resolución**. El motor grande nos permite sustituir sensores ópticos externos, calculando la odometría de forma matemática para el control de vueltas y el estacionamiento en reversa. El motor mediano elimina las holguras mecánicas típicas de los servos comerciales pequeños, asegurando que las manguetas del sistema Ackermann mantengan el ángulo exacto exigido por el bucle PID.
+* **Arreglo Láser ToF VL53L5CX:** Reemplaza a los sensores ultrasónicos tradicionales (los cuales sufren de eco y rebotes falsos en las esquinas de la pista). Al medir por Tiempo de Vuelo de fotones infrarrojos en matrices de hasta $8\times8$, este componente proporciona una telemetría milimétrica del ancho y distancia de los muros, siendo completamente inmune a las variaciones de luz del recinto de competencia.
+* **Raspberry Pi AI Camera:** Su inclusión es el pilar del software de navegación. Al procesar redes neuronales directamente en su hardware dedicado (Edge AI), es capaz de clasificar y diferenciar instantáneamente las señales de tráfico rojas y verdes sin consumir ciclos de reloj de la CPU principal de la Raspberry Pi 5. Esto permite balancear la carga de trabajo y ejecutar el control cinemático en tiempo real sin retrasos (*lag*).
 El código de control implementado en Python gestiona la interpretación de los datos de los sensores y actúa en consecuencia, ajustando la dirección, velocidad y decisiones del robot según las condiciones del entorno.
 
 
@@ -606,7 +682,7 @@ El código de control implementado en Python gestiona la interpretación de los 
 
 ## 🚗 Gestión de Movilidad
 
-Este robot, diseñado en 3D, se mueve como un coche: sus ruedas traseras lo impulsan y las ruedas delanteras directrices lo guían. Su diseño mecánico, detallado en el modelo 3D, busca ser robusto y ligero, con espacio para todos los componentes.
+Este robot, dise, se mueve como un coche: sus ruedas traseras lo impulsan y las ruedas delanteras directrices lo guían. Su diseño mecánico, detallado en el modelo 3D, busca ser robusto y ligero, con espacio para todos los componentes.
 
 La dirección es clave: un servomotor mueve las ruedas delanteras, controlando los giros mediante un mecanismo de dirección (tipo Ackerman). Un controlador coordina estos movimientos para lograr una maniobrabilidad precisa. En resumen, es un vehículo ágil, diseñado para el control exacto de su trayectoria..
 
