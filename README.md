@@ -777,7 +777,7 @@ Para validar el comportamiento del bus I2C y calibrar los algoritmos de navegaci
 
 La captura de pantalla adjunta (`Diagrama 1.jpeg`) muestra el estado del entorno capturado por el bloque tridimensional de telemetría del robot:
 
-![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Other/Prueba%201.jpeg)
+![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Other/Diagrama%201.jpeg)
 
 ### ⚙️ Desglose Técnico de la Telemetría por Sensor
 
