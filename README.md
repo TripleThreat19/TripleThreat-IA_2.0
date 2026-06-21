@@ -729,7 +729,7 @@ A continuación, se presentan las figuras que ilustran el prototipo de nuestro r
 ---
 
 # *Parte Izquierda*
-![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/Triple-Threat-AI/blob/main/V-Fotos/Izquierda%20.jpg)
+![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Vehiculo-Fotos/Izquierda.jpeg)
 
 ---
 
