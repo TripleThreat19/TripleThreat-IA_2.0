@@ -856,8 +856,7 @@ Para maximizar la eficiencia del procesamiento en la Raspberry Pi 5 y evitar la 
 
 
 ![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Other/Diagrama%203.jpeg)
-![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Other/Diagrama%202.jpeg)
-
+![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Other/Leyenda.jpeg)
 
 ### 📊 Código de Estados y Umbrales de Proximidad
 
