@@ -3,7 +3,7 @@
 
 ## 🚀 Categoría: Futuros Ingenieros WRO 2026
 
-![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Other/Diagrama%201.jpeg)
+![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/logo%20del%20equipo/Logo%20del%20Equipo.jpg)
 
 
 ---
