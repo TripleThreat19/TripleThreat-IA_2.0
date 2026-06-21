@@ -26,7 +26,7 @@ Ahora, después de esas dos increíbles experiencias, queríamos un nuevo desaf�
 
 ## Diario de Ingeniería / Documentación Técnica
 
-[![Imagen de Portada del Proyecto Orlando]
+[![Imagen de Portada del Proyecto Orlando](https://github.com/TripleThreat19/Triple-Threat-AI/blob/main/Logo%20del%20Equipo/Logo%20del%20Equipo.jpg)
 
 Este repositorio centraliza toda la **documentación técnica** del proyecto **Orlando**, una iniciativa desarrollada por el equipo **Triple Threat** para la categoría **Futuros Ingenieros** de la **WRO 2025**. Aquí, desglosamos meticulosamente cada aspecto de nuestro robot: desde el **diseño detallado del vehículo** y la **programación del sistema de control**, hasta la **selección estratégica de componentes** y la **estructura de cableado** implementada para su óptimo funcionamiento.
 
@@ -707,9 +707,10 @@ A continuación, se presentan las figuras que ilustran el prototipo de nuestro r
 
 # *Parte de abajo*
 
-![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/Triple-Threat-AI/blob/main/V-Fotos/Abajo.jpg)
+![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Vehiculo-Fotos/ABAJO.jpeg)
 
 ---
+
 
 # *Parte de Adelante* 
 ![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Vehiculo-Fotos/Adelante.jpeg)
