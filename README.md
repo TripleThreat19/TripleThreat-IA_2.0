@@ -789,6 +789,66 @@ A continuación, se presentan las figuras que ilustran el prototipo de nuestro r
 ![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Vehiculo-Fotos/Izquierda.jpeg)
 
 ---
+Aquí tienes el documento redactado en formato **Markdown (`.md`)** listo para copiar y pegar directamente en tu archivo de GitHub (`README.md` o la sección correspondiente de tu wiki).
+
+Incluye la estructura completa, el título solicitado y los cambios estratégicos del paso al servomotor **MG995** y a las **pilas 18650**:
+
+```markdown
+# 🔄 Cambios Estratégicos en la Arquitectura y Cambio de Componentes
+
+Para optimizar la eficiencia dinámica, reducir el peso general y maximizar la velocidad de respuesta en la pista para la WRO 2026 (*Future Engineers*), el equipo **Triple Threat** ejecutó una reingeniería en los subsistemas de potencia y dirección.
+
+---
+
+## 1. Migración del Sistema de Alimentación: Eliminación del Power Bank por Celdas Li-ion 18650
+
+Inicialmente, el sistema contaba con un Power Bank USB comercial dedicado exclusivamente a alimentar la Raspberry Pi 5. Tras las pruebas físicas en pista, rediseñamos la red eléctrica integrando un **paquete unificado de dos baterías Li-ion 18650 en serie ($7.4\text{V}$ nominales)** gestionadas a través de un regulador de voltaje *Step-Down* (Buck Converter) de alta eficiencia.
+
+### 📊 Comparativa de Rendimiento
+
+| Criterio | Configuración Anterior (Power Bank USB) | Nueva Configuración (2x Baterías 18650 + Buck) |
+| :--- | :--- | :--- |
+| **Peso y Volumen** | Elevado; estructura voluminosa y centro de gravedad alto. | Compacto; distribución simétrica e integración directa en chasis 3D. |
+| **Suministro de Corriente** | Limitado por la electrónica interna del Power Bank ($\le 3\text{A}$). | Entrega de alta corriente sin cortes ($\ge 5\text{A}$ estables a $5\text{V}$). |
+| **Eficiencia de Carga** | Pérdidas por doble conversión interna. | Línea directa de alta eficiencia ($\sim 90\%$) sin desperdicio térmico. |
+
+### 🚀 Impacto en el Vehículo
+* **Reducción de Masa Crítica:** Eliminamos el peso muerto de la carcasa y circuitos del Power Bank, bajando el centro de gravedad del vehículo.
+* **Inmunidad a *Brownouts*:** La combinación de las celdas 18650 con el regulador Buck garantiza un flujo constante de $5\text{V}$ a $5\text{A}$ para la **Raspberry Pi 5** y la **AI Camera**, evitando reinicios accidentales cuando el motor de tracción genera picos de demanda.
+
+---
+
+## 2. Sustitución de Actuador de Dirección: Del Motor Mediano LEGO EV3 al Servomotor Digital MG995
+
+En la geometría de dirección Ackermann, sustituimos el motor mediano de LEGO EV3 por un **servomotor digital de alta velocidad y piñonería metálica MG995**.
+
+### 🔍 Justificación Técnica del Cambio
+
+1. **Liberación de Cargas en CPU:** El motor mediano EV3 requería un lazo de control PID constante en Python mediante lecturas del encoder. El servomotor MG995 se controla directamente mediante **señales PWM por hardware**, liberando ciclos de reloj en la Raspberry Pi 5 para la visión computacional y los sensores ToF (VL53L5CX).
+2. **Elevado Torque y Rigidez Mecánica:** Con un torque superior ($\sim 10 - 12\text{ kg}\cdot\text{cm}$) y engranajes de latón/aluminio, el MG995 elimina el juego mecánico (*backlash*) en las manguetas delanteras, resistiendo las fuerzas de fricción laterales en curvas cerradas.
+3. **Respuesta Angular Inmediata:** La velocidad de corrección digital permite cambiar el ángulo de las ruedas en milisegundos, reaccionando de inmediato a las instrucciones del pipeline de la cámara de IA.
+
+---
+
+## 🛠️ Resumen de Beneficios en la Dinámica Global
+
+
+```
+
+[Baterías 18650 (7.4V)] ──► [Regulador Buck (5V/5A)] ──► Raspberry Pi 5 (Cero Reinicios)
+└──► [Driver de Potencia]    ──► Motor Grande EV3 (Tracción)
+──► Servo MG995 (Dirección PWM)
+
+```
+
+1. **Mayor Autonomía:** Maximización de la densidad energética para sesiones de prueba prolongadas.
+2. **Chasis Híbrido Optimizado:** Menos volumen en el morro del vehículo y mayor agilidad espacial.
+3. **Control Predictivo:** Sincronización precisa entre la percepción de los sensores y la respuesta de los actuadores sin cuellos de botella por procesamiento.
+
+```
+
+
+---
 
 ## 🧠 Estrategias Planteadas para Resolver los Retos
 
