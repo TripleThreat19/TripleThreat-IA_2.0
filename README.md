@@ -921,6 +921,8 @@ El pipeline de navegación está diseñado bajo una arquitectura modular desacop
 
 ---
 
+```python
+
 ## 💻 Algoritmo Principal en Pseudocódigo
 
 # ==============================================================================
