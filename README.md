@@ -1190,9 +1190,133 @@ Al fusionar las tres lecturas filtradas por el horizonte, el algoritmo determina
 ---
 # 🧠 Avances y Errores
 
+### Caso de Estudio: Resolución de Conflictos de Bus I²C en Sensores Láser VL53L5CX
+
+#### 1. El Desafío de Hardware (Contexto)
+Para lograr una visión tridimensional del entorno, el diseño del robot requería conectar **tres sensores de Tiempo de Vuelo (ToF) VL53L5CX** a la computadora principal (Raspberry Pi 5). Cada sensor proporciona una matriz de profundidad de $8 \times 8$ zonas, permitiendo detectar paredes y obstáculos en tiempo real. 
+
+Para optimizar el espacio y simplificar el cableado, los tres sensores se conectaron compartiendo un único bus físico de comunicación **I²C** (pines comunes de Datos `SDA`, Reloj `SCL`, alimentación `3.3V` y Masa `GND`). Adicionalmente, el pin de control de encendido de cada sensor (`LPn` / *Low Power enable*) se conectó a un pin digital (`GPIO`) independiente de la Raspberry Pi.
+
+#### 2. El Problema: Colisión de Direcciones en la Línea de Datos
+El protocolo I²C funciona mediante un esquema Maestro-Esclavo, donde la Raspberry Pi se comunica con cada componente utilizando una **dirección lógica hexadecimal única**.
+
+El fallo técnico ocurrió porque **todos los sensores VL53L5CX vienen configurados de fábrica con la misma dirección I²C por defecto (`0x52`)**. Al encender el robot, los tres sensores intentaban responder simultáneamente a la misma consulta de la Raspberry Pi sobre las mismas líneas físicas (`SDA`/`SCL`). Esto generó un choque de señales electrónicas (*interferencia y datos corruptos*), bloqueando por completo el bus de comunicación e impidiendo la lectura de las distancias.
+
+[ Raspberry Pi 5 ] ─── Petición a 0x52 ───► [ Bus I²C (SDA/SCL) ]
+│
+┌─────────────────────────────────────┼─────────────────────────────────────┐
+▼                                     ▼                                     ▼
+[ Sensor 1 (0x52) ]                   [ Sensor 2 (0x52) ]                   [ Sensor 3 (0x52) ]
+│                                     │                                     │
+└──────── Responde al tiempo ─────────┴──────── Corrompe la señal ──────────┘
+
+
+#### 3. La Solución: Secuencia de Inicialización Dinámica por Software
+Para solucionar la colisión sin añadir un circuito integrado multiplexor adicional (*que sumaría peso, volumen y latencia al vehículo*), diseñamos un algoritmo de inicialización secuencial aprovechando los pines de control `LPn`:
+
+1. **Apagado General por Hardware:** Al arrancar el sistema, la Raspberry Pi apaga los tres sensores bajando la señal de sus pines `LPn`.
+2. **Encendido y Reasignación Individual:**
+   * La Raspberry Pi activa únicamente el **Sensor 1** a través de su pin `LPn`.
+   * Como es el único activo en el bus, escucha en la dirección `0x52`. Inmediatamente, el software le envía un comando para **cambiar su dirección en memoria volátil a `0x54`**.
+   * Se repite el proceso con el **Sensor 2**, encendiéndolo y reasignando su dirección a **`0x56`**.
+   * Finalmente, se activa el **Sensor 3**, manteniendo su dirección de fábrica o asignándole **`0x58`**.
+3. **Lectura Multicanal Estable:** Una vez reconfigurados con direcciones únicas, el bus I²C lee los tres sensores a alta velocidad sin interferencias ni pérdida de fotogramas.
+
+[ Paso 1: Apagar todos mediante LPn ]
+[ Paso 2: Encender Sensor 1 ] ──► Cambiar dirección 0x52 ──► 0x54
+[ Paso 3: Encender Sensor 2 ] ──► Cambiar dirección 0x52 ──► 0x56
+[ Paso 4: Encender Sensor 3 ] ──► Mantener/Cambiar a    ──► 0x58
+[ Resultado ]: Lectura simultánea y fluida de los 3 sensores en el mismo bus I²C.
+
+#### 💡 Lección Aprendida e Impacto
+Esta solución basada en firmware evitó agregar componentes de hardware extra al chasis, manteniendo el circuito ligero y garantizando un tiempo de respuesta de alta velocidad para la toma de decisiones en curva.
 
 ---
 
+### Caso de Estudio: Compilación y Despliegue del Modelo YOLO en el Acelerador NPU Hailo-8L
+
+#### 1. El Desafío de Software y Visión (Contexto)
+Para clasificar los pilares rojos y verdes en tiempo real sin saturar el procesamiento central de la Raspberry Pi 5, delegamos las tareas de Visión Computacional a un acelerador de red neuronal (*NPU*) **Hailo-8L** conectado mediante el bus PCIe. 
+
+El modelo de detección de objetos, entrenado previamente bajo la arquitectura YOLO y guardado originalmente en formato PyTorch (`.pt`), debía ser optimizado, cuantizado y compilado hacia el formato nativo ejecutable del hardware de Hailo: el archivo **HEF** (*Hailo Executable Format*). Para esta conversión se utilizó la herramienta oficial *Hailo Dataflow Compiler* (DFC) en la computadora de desarrollo (*Host PC*).
+
+#### 2. El Problema: Incompatibilidad de ABI y Bloqueo de Ejecución
+Durante las pruebas de despliegue en el robot, la Raspberry Pi 5 rechazó el archivo `.hef` compilado, arrojando un error fatal e impidiendo el inicio del pipeline de navegación por cámara.
+
+El diagnóstico confirmó que no existía ningún fallo en los pesos de la red ni en la arquitectura YOLO, sino una **incompatibilidad estricta de ABI** (*Application Binary Interface*) en la pila de software de Hailo:
+* **Falta de Retrocompatibilidad:** A diferencia de marcos de trabajo convencionales como ONNX o TensorFlow Lite, el ecosistema de Hailo exige una simetría exacta de versiones entre el compilador de la computadora central y el motor de ejecución (*Runtime*) del chip destino.
+* **Desfase de Entornos:** El entorno virtual de la computadora de desarrollo tenía instalado una versión más reciente del compilador Hailo DFC. El archivo `.hef` resultante quedó "firmado" bajo las especificaciones de esta versión superior.
+* **Bloqueo del Driver (HailoRT):** La Raspberry Pi 5 ejecutaba una versión previa y estable del driver **HailoRT** (*Hailo Runtime*, integrado con `libcamera`). Al detectar que el modelo provenía de una versión de compilador no soportada, el sistema operativo bloqueó la carga del modelo en el acelerador PCIe para prevenir corrupción de memoria o comportamientos erráticos.
+
+  
+  [ Host PC (DFC v2.X - Nuevo) ] ──► Compila modelo YOLO ──► Genera archivo .hef (v2.X)
+│
+▼
+[ Raspberry Pi 5 (HailoRT v1.X - Estable) ] ◄──── Intenta cargar .hef
+│
+▼
+❌ [ ERROR DE ABI ]: Rechazo por choque de versiones de software / Firma Incompatible
+
+#### 3. La Solución: Sincronización Estricta de Versiones (*Downgrade*)
+Para resolver el bloqueo sin desestabilizar la instalación de Linux y `libcamera` en la Raspberry Pi 5, ajustamos el entorno del servidor de desarrollo al estado del hardware destino:
+
+1. **Reversión de Versión (*Downgrade*):** Desinstalamos la versión más reciente del *Hailo Dataflow Compiler* en la computadora principal e instalamos exactamente la versión equivalente que coincidía con la compilación del driver HailoRT activo en la Raspberry Pi 5.
+2. **Re-ejecución del Pipeline de Compilación:** Volvimos a procesar el modelo `.pt` dentro del nuevo entorno sincronizado, regenerando el archivo `.hef` con la firma de ABI correcta.
+3. **Despliegue Exitoso:** El nuevo binario fue aceptado de inmediato por el acelerador Hailo-8L, permitiendo ejecutar inferencias de visión artificial a **más de 30 FPS** sin sobrecargar la CPU de la Raspberry Pi.
+
+[ Entorno de Desarrollo ] ──► Ajuste de versión (Downgrade) ──► Sincronización con HailoRT Pi 5
+│
+[ Modelo YOLO (.pt) ] ────► Re-compilación con DFC alineado ───► Nuevo binario (.hef)
+│
+▼
+✔️ [ DESPLIEGUE EXITOSO ]: Inferencia en NPU Hailo-8L a >30 FPS con consumo mínimo de CPU
+
+#### 💡 Lección Aprendida e Impacto
+En sistemas integrados de alto rendimiento (*Edge AI*), la estabilidad depende tanto del diseño del código como del control estricto de las dependencias del entorno. Aprendimos a mantener entornos virtuales de desarrollo idénticos a las versiones del sistema operativo del robot, garantizando compilaciones fluidas y evitándonos retrasos de despliegue en competencia.
+
+
+---
+
+### Caso de Estudio: Conflicto de Protocolo PMIC en Módulo UPS y Solución por Relé
+
+#### 1. El Desafío de Energía (Contexto)
+Para asegurar el suministro ininterrumpido de energía a la Raspberry Pi 5 y sus periféricos de alto consumo (NPU Hailo-8L, AI Camera y sensores ToF), integramos un módulo **UPS** (*Uninterruptible Power Supply*) alimentado por un banco de celdas de litio 18650. La meta era aislar la electrónica sensible de los picos de voltaje e interferencias generados por los motores de tracción.
+
+#### 2. El Problema: Incompatibilidad del Protocolo de Encendido (*Soft-Start*)
+Al integrar el módulo UPS al circuito general del robot, descubrimos que la tarjeta no podía encenderse mediante un interruptor de retención estándar (*switch ON/OFF tradicional*).
+
+Tras realizar pruebas de laboratorio sobre el puerto de control JST del UPS, diagnosticamos que el circuito integrado de gestión de energía (**PMIC**) del módulo operaba mediante un **protocolo de encendido por pulso prolongado** (*Soft-Start*):
+* **Requisito de Conmutación:** El circuito del conector JST requería cerrarse de forma continua durante un intervalo de **3 a 5 segundos** y abrirse inmediatamente después para iniciar la secuencia de arranque (*booting*) de la Raspberry Pi 5.
+* **Conflicto del Switch Tradicional:** Si se utilizaba un interruptor físico estándar, la línea permanecía cerrada indefinidamente. La lógica del PMIC interpretaba este contacto permanente como una orden de **apagado forzado** (*Force Shutdown*) o entraba en un bucle infinito de reinicios, dejando al robot inoperativo para la competencia.
+
+  [ Switch Físico Tradicional (Cerrado Permanente) ] ──► PMIC del UPS ──► Interpretado como "Hard Reset"
+│
+▼
+❌ Bucle de Reinicios / Apagado
+
+#### 3. La Solución: Adaptación de Señal y Emulación de Pulso por Relé
+Para cumplir con la normativa de la WRO (que exige un arranque limpio e inmediato del vehículo) sin manipular manualmente la placa interna, rediseñamos la etapa de control integrando un **módulo de relé electrónico**:
+
+1. **Aislamiento Galvánico:** Desconectamos el puerto JST del mando manual y lo cableamos directamente a los contactos normalmente abiertos (NO) del relé.
+2. **Emulación del Pulso de Encendido:** La bobina de control del relé se energiza mediante el circuito principal del vehículo. Un temporizador lógico en la etapa de potencia mantiene activo el relé durante el tiempo exacto que requiere el PMIC ($\sim 4\text{ s}$) y luego abre el contacto automáticamente.
+3. **Arranque Seguro y Repetible:** El relé emula mecánicamente el "toque" prolongado exacto que necesita el UPS para despertar a la Raspberry Pi 5, liberando la línea a tiempo para evitar el corte por sobre-contacto.
+
+[ Encendido General ] ──► Activa Temporizador/Relé ──► Cierra contacto JST (3 a 5 seg)
+│
+▼
+[ Secuencia Terminada ] ◄── Abre contacto por hardware ◄── PMIC Inicia la Raspberry Pi 5
+│
+▼
+✔️ [ ENERGÍA ESTABLE ]: Arranque automatizado, repetible y seguro para competencia
+
+#### 💡 Lección Aprendida e Impacto
+Mediante la caracterización empírica del puerto JST y la implementación del relé como adaptador de señal, resolvimos una incompatibilidad crítica entre componentes de potencia sin reemplazar hardware ni añadir circuitos complejos de estado sólido. El sistema garantiza un encendido robusto y confiable en pista con solo presionar el switch principal del vehículo.
+
+
+
+
+
+---
 
 
 # Codigo del Robot/Solución de problemas
