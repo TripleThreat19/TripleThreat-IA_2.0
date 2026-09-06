@@ -923,7 +923,20 @@ El pipeline de navegación está diseñado bajo una arquitectura modular desacop
 
  la arquitectura modular desacoplada en procesos independientes:
  
-![Motor Codificador Optico Makeblock 180](https://github.com/TripleThreat19/Triple-Threat-AI/blob/main/Other/Diagrama%20de%20Flujo%20del%20Codigo%201%20Desafio%20Abierto%20.png)
+![Motor Codificador Optico Makeblock 180](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/SRC/Diagrama%201.jpeg)
+![Motor Codificador Optico Makeblock 180](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/SRC/Diagrama%202.jpeg)
+![Motor Codificador Optico Makeblock 180](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/SRC/Diagrama%203.jpeg)
+![Motor Codificador Optico Makeblock 180](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/SRC/Diagrama%204.jpeg)
+
+![Motor Codificador Optico Makeblock 180](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/SRC/Diagrama%205.jpeg)
+
+
+
+
+
+
+
+
 
 
 ---
