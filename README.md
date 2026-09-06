@@ -603,7 +603,7 @@ En una arquitectura de carrera donde compartimos la energía de la batería de l
 
 "Integramos un relé electrónico con display para gestionar de manera inteligente la alimentación principal del robot. Nos otorga telemetría visual inmediata del voltaje en boxes y proporciona un aislamiento completo entre los pines de la Raspberry Pi 5 y los motores LEGO EV3, evitando ruidos electromagnéticos y protegiendo el sistema contra sobredescargas de la batería."
 
-![La Raspberry Pi AI Camera](https://github.com/TripleThreat19/Triple-Threat-AI/blob/main/Schemes/Camara%20Rasberry%20PI%205.jpg)
+![La Raspberry Pi AI Camera](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Schemes/rel%C3%A9%20electronico%20con%20display%20arduino.jpg)
 
 
 ---
