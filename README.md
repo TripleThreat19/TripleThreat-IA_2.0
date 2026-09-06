@@ -903,7 +903,7 @@ A continuación, se presentan las figuras que ilustran el prototipo de nuestro r
 ![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Vehiculo-Fotos/Izquierda.jpeg)
 
 ---
-```markdown
+
 # 🔄 Cambios Estratégicos en la Arquitectura y Cambio de Componentes
 
 Para optimizar la eficiencia dinámica, reducir el peso general y maximizar la velocidad de respuesta en la pista para la WRO 2026 (*Future Engineers*), el equipo **Triple Threat** ejecutó una reingeniería en los subsistemas de potencia y dirección.
