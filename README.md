@@ -349,13 +349,13 @@ Estos componentes vitales para la inteligencia y operación del robot se alojar�
 Nuestro sistema electrónico, que impulsa y controla cada movimiento de nuestro robot, está cuidadosamente ensamblado con los siguientes elementos clave:
 -	Raspberry Pi 5
 -	Raspberry Pi AI Camera
--	Motor Mediano EV3
 -	Motor Grande EV3
+-	Servo Motor 
 -	Puente H
-- Regulador de Voltaje
--	Baterías
+- Regulador Step Down
 -	Switch
--	STMicroelectronics VL53L5CX 
+-	STMicroelectronics VL53L5CX
+-	Pilas 18654
 
   
 A continuación, se presentará el Diagrama de Cableado que ilustra cómo estos componentes se interconectan para funcionar en armonía.
@@ -376,7 +376,7 @@ Servo Motor: Este motor puede moverse a posiciones específicas y se controla a 
 
 Motor DC con Encoder: Este es un motor que gira continuamente, y el "encoder" le permite a la Raspberry Pi saber exactamente qué tan rápido está girando o qué posición tiene. También se controla a través del driver del motor.
 
-Módulo Regulador de Voltaje: Este módulo toma la energía de las baterías (las rojas) y la ajusta a un voltaje específico que necesita el servomotor, asegurando que reciba la cantidad correcta de energía de manera estable. 
+Módulo Regulador Step Down: Este módulo toma la energía de las baterías (las rojas) y la ajusta a un voltaje específico que necesita el servomotor, asegurando que reciba la cantidad correcta de energía de manera estable. 
 
 Cámara: Esta cámara se conecta directamente a la Raspberry Pi. Permite a la Raspberry Pi "ver" y capturar imágenes o video.
 
@@ -472,7 +472,7 @@ Ambos motores (Grande y Mediano) operan como un sistema de **lazo cerrado** grac
 * **Control de Posición y Velocidad:** Aunque se utiliza principalmente para el desplazamiento continuo del vehículo, el encoder interno nos permite implementar un **control PID de velocidad**. Esto asegura que el motor mantenga las RPM exactas calculadas por el algoritmo de *Time Attack*, sin importar si el robot está subiendo la rampa o tomando una curva cerrada.
 * **Importancia de la Retroalimentación:** Los datos del encoder se procesan en Python para realizar **odometría**. Al saber los grados exactos que ha girado el motor grande, el software calcula la distancia en milímetros que el robot ha recorrido en la pista, vital para planificar el momento justo de frenado o el inicio de la maniobra de estacionamiento.
 
-###   Motor Mediano LEGO EV3 (Servomotor de Dirección)
+###   Servomotor
 
 * **Rol en el Robot:** Control Angular del Mecanismo Ackermann (Eje Delantero).
 * **Control de Posición Preciso:** Este motor sustituye al servomotor comercial clásico. Aprovechamos su alta resolución para mover las ruedas delanteras a ángulos específicos (ej. $-15^\circ$ para esquivar un pilar izquierdo, $+22^\circ$ para una curva cerrada a la derecha). Una vez alcanzado el ángulo, el lazo cerrado bloquea el motor en esa posición, resistiendo las fuerzas de fricción de las ruedas contra el suelo.
@@ -524,19 +524,29 @@ El uso de este sensor cambia por completo el juego para nuestro robot, resolvien
 
 ---
 
-#### ⚡ Regulador de Voltaje
+#### ⚡ Regulador de Voltaje Step Dwon
 
-Un **regulador de voltaje electrónico** en robótica es un componente crucial diseñado para **mantener una tensión eléctrica de salida constante y estable** para los distintos sistemas del robot, sin importar las variaciones en la fuente de alimentación (como una batería que se descarga) o los cambios en la demanda de energía de los componentes del robot.
+Un regulador de voltaje Step-Down (o Buck Converter) es un circuito electrónico de conversión de corriente directa a corriente directa (DC-DC) de alta eficiencia. Su función principal es reducir (bajar) un voltaje de entrada más alto a un voltaje de salida más bajo y estabilizado, manteniendo la tensión constante sin importar los picos o caídas en la alimentación principal.
 
+A diferencia de los reguladores lineales tradicionales (como el famoso LM7805), un regulador Step-Down opera mediante conmutación (PWM), lo que significa que "enciende y apaga" la corriente a altas frecuencias a través de un transistor y un inductor para ajustar el voltaje deseado sin desperdiciar energía.
 ---
 **_Características Esenciales:_**
 
-* **Estabilización de la Tensión de Suministro:** Su función principal es vital para un robot. Asegura que la Raspberry Pi, los servomotores y los sensores reciban el voltaje exacto que necesitan (por ejemplo, 5V para la Pi), incluso si la batería del robot comienza a descargarse y su voltaje total disminuye. Esto es crucial para la estabilidad y fiabilidad del sistema.
-* **Manejo de Diferentes Niveles de Voltaje:** Un robot suele tener varios componentes que operan a diferentes voltajes (ej. 5V para la lógica, 12V para los motores). Los reguladores permiten crear "rieles" de voltaje específicos a partir de una única fuente de alimentación, simplificando el diseño del sistema de energía.
-* **Eficiencia Energética (para Robots Autónomos):** En robótica, la eficiencia es fundamental para la autonomía. Los reguladores conmutados (switching) son preferidos en robots. Son mucho más eficientes que los lineales, ya que minimizan la energía que se pierde como calor. Esto significa que la batería del robot durará más tiempo, aumentando su autonomía operativa.
-* **Versatilidad:** Pueden ser reductores (buck) para bajar el voltaje de la batería (ej. de 12V a 5V para la Pi) o incluso elevadores (boost) si un componente necesita un voltaje mayor que el de la batería.
-
+* **Alta Eficiencia Energética (85% – 95%):** Al ser un regulador conmutado, prácticamente no desperdicia energía. En lugar de quemar el exceso de voltaje en forma de calor, convierte la energía de manera eficiente.
+* **Amplio Rango de Entradas y Salidas Ajustables:** Soporta voltajes de entrada elevados (ej. $7\text{V} - 28\text{V}$) y permite ajustar el voltaje de salida (ej. a $5\text{V}$ fijación continua) mediante un potenciómetro de precisión (Trimpot).
+* **Baja Generación de Calor:** No requiere disipadores de calor voluminosos, lo que ahorra espacio y peso dentro de la estructura física del robot.
+* **Regulación de Salida Estable (Bajo Ripple / Rizado):** Mantiene el voltaje de salida en una tolerancia muy fina, protegiendo los componentes sensibles contra fluctuaciones.
+* **Protección Incorporada:** La mayoría de los módulos comerciales (como el LM2596 o MP1584) incluyen protección contra sobrecorriente, cortocircuitos y sobrecalentamiento.
 ---
+**_¿Qué beneficios trae a nuestro robot en la WRO 2026?_**
+
+En una arquitectura como la de nuestro robot, donde conviven componentes informáticos de alto consumo (Raspberry Pi 5, Raspberry Pi AI Camera) con componentes mecánicos de potencia (motores y actuadores LEGO EV3), el regulador Step-Down es una pieza crítica por los siguientes motivos:
+
+* **Aislamiento Electrónico y Protección de la Raspberry Pi 5:** La Raspberry Pi 5 requiere un suministro de $5\text{V}$ extremadamente limpio y continuo. Las baterías LiPo o Li-Ion entregan voltajes mayores (ej. $7.4\text{V}$ a $11.1\text{V}$) y bajan progresivamente a medida que se descargan. El Step-Down garantiza que la Pi reciba siempre exactamente $5\text{V}$, evitando que la tarjeta se reinicie o se dañe por un pico de sobrevoltaje.
+* **Prevención de Bajones de Tensión (Brownouts):** Cuando el motor grande LEGO EV3 de tracción acelera bruscamente o el motor mediano de dirección cambia de sentido, se producen caídas severas de voltaje en la batería principal. El regulador Step-Down absorbe estas caídas y mantiene la salida de $5\text{V}$ estable, evitando que la IA o los sensores ToF (VL53L5CX) pierdan energía a mitad de una maniobra.
+* **Mayor Autonomía y Eficiencia para el Time Attack:** Como el regulador convierte la energía con una eficiencia cercana al $90\%$, no desperdicia la carga de la batería en forma de calor. Esto nos otorga mayor tiempo de prueba en pista y asegura que el robot mantenga el mismo rendimiento y velocidad constante desde la primera hasta la última vuelta.
+* **Reducción de Peso y Compactación de Espacio:** Al no requerir disipadores metálicos pesados, nos permite mantener el chasis liviano y dentro de las dimensiones y restricciones de peso oficiales del reglamento de la WRO.
+
 
 El **Regulador de Voltaje Electrónico** es indispensable para el robot porque asegura una **alimentación eléctrica constante y estable** específicamente para el/los servomotor(es). Es vital para:
 
