@@ -949,14 +949,10 @@ En la geometría de dirección Ackermann, sustituimos el motor mediano de LEGO E
 └──► [Driver de Potencia]    ──► Motor Grande EV3 (Tracción)
 ──► Servo MG995 (Dirección PWM)
 
-```
-
+``` 
 1. **Mayor Autonomía:** Maximización de la densidad energética para sesiones de prueba prolongadas.
 2. **Chasis Híbrido Optimizado:** Menos volumen en el morro del vehículo y mayor agilidad espacial.
 3. **Control Predictivo:** Sincronización precisa entre la percepción de los sensores y la respuesta de los actuadores sin cuellos de botella por procesamiento.
-
-```
-
 
 ---
 
