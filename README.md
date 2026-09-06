@@ -364,21 +364,75 @@ A continuación, se presentará el Diagrama de Cableado que ilustra cómo estos 
 
 Explicación del Diagrama Expuesto
 
-Raspberry Pi: Es la computadora principal del sistema. Recibe información de algunos componentes y envía órdenes a otros.
+Aquí tienes la explicación técnica detallada del **diagrama de cableado (esquemático eléctrico)**, redactada en formato **Markdown (`.md`)** lista para copiar y pegar directamente en la documentación de tu repositorio de GitHub:
 
-Power Bank: Este es la fuente de energía exclusiva para la Raspberry Pi. Le suministra la electricidad necesaria para funcionar.
+```markdown
+# 🔌 Explicación Detallada del Diagrama de Cableado (Esquemático Eléctrico)
 
-Baterías: Estas baterías son la fuente de energía exclusiva para los motores. Suministran electricidad al Módulo Regulador de Voltaje y al Módulo de Driver de Motor.
+El diseño del circuito eléctrico del robot sigue una arquitectura **de fuente única con división de etapas (Potencia vs. Lógica)**. Esta topología garantiza que los motores de alta demanda de corriente no interfieran con la sensibilidad de la **Raspberry Pi 5**, la **AI Camera** y los sensores láser ToF.
 
-Módulo de Driver de Motor: Este módulo se conecta a la Raspberry Pi (para recibir órdenes) y a las baterías (para obtener energía). Se usa específicamente para controlar el motor DC con encoder.
+A continuación, se detalla el flujo de la corriente y la función de cada trayectoria representada en el esquema eléctrico:
 
-Servo Motor: Este motor puede moverse a posiciones específicas y se controla a través del drive.
+---
 
-Motor DC con Encoder: Este es un motor que gira continuamente, y el "encoder" le permite a la Raspberry Pi saber exactamente qué tan rápido está girando o qué posición tiene. También se controla a través del driver del motor.
+## 🔴 1. Línea Principal de Alimentación y Control de Potencia (Línea Roja y Azul)
 
-Módulo Regulador Step Down: Este módulo toma la energía de las baterías (las rojas) y la ajusta a un voltaje específico que necesita el servomotor, asegurando que reciba la cantidad correcta de energía de manera estable. 
+* **Fuente de Energía (2x Baterías Li-ion 18650):** 
+  * Las celdas están conectadas en serie, entregando una tensión nominal combinada de **$7.4\text{V}$**.
+  * El polo positivo (cable rojo) y el negativo (cable azul) van conectados directamente a la entrada del **Relé Electrónico con Display Digital**.
+* **Relé Electrónico con Display:**
+  * Funciona como la primera barrera de seguridad. Monitorea y muestra en la pantalla de 7 segmentos el voltaje en tiempo real del banco de baterías.
+  * Permite el corte/paso digital de la corriente y protege el sistema contra caídas extremas de voltaje (*Corte por bajo voltaje*).
+* **Interruptor Físico (Switch Principal):**
+  * Conectado en serie en la línea positiva ($+$) inmediatamente después del relé. Funciona como el encendido/apagado general mecánico del robot.
 
-Cámara: Esta cámara se conecta directamente a la Raspberry Pi. Permite a la Raspberry Pi "ver" y capturar imágenes o video.
+---
+
+## ⚡ 2. División de Etapas: Potencia vs. Lógica Regulada
+
+Una vez que la corriente atraviesa el switch principal, la línea de $7.4\text{V}$ se divide en dos nodos paralelos:
+
+### A. Etapa de Potencia Nativa ($7.4\text{V}$) — Motores de Alta Corriente
+* **Puente H (Driver de Motor L298N):**
+  * Recibe los **$7.4\text{V}$ nativos** directamente de la batería en sus bornes de entrada ($V_{CC}$ y $GND$). Esto le otorga al **Motor Grande LEGO EV3** de tracción el máximo torque y la mayor velocidad posible en rectas.
+  * Las salidas del Puente H se conectan a los bornes del motor EV3 para alternar el sentido de giro y la velocidad mediante Modulación por Ancho de Pulso (PWM).
+
+### B. Etapa Lógica Regulada ($5.0\text{V}$) — Electrónica de Control
+* **Regulador Step-Down (Buck Converter LM2596):**
+  * Recibe la línea positiva de $7.4\text{V}$ y la reduce de forma conmutada a exactamente **$5.0\text{V}$ estables con hasta $5\text{A}$ de salida**.
+* **Raspberry Pi 5 y AI Camera:**
+  * La salida regulada de $5.0\text{V}$ alimenta la Raspberry Pi 5 a través de los pines de alimentación GPIO ($5\text{V}$ y $GND$).
+  * La **Raspberry Pi AI Camera** se alimenta internamente desde el bus de datos y energía (conector CSI/MIPI) conectado a la Pi 5.
+* **Servomotor de Dirección (MG90S / MG995):**
+  * Para evitar sobrecargar la Raspberry Pi 5, la línea de potencia ($V_{CC}$ y $GND$) del servomotor se toma **directamente de la salida regulada del Buck Converter ($5\text{V}$)**.
+  * El cable amarillo de señal de control ($PWM$) del servomotor se conecta a un pin GPIO de la Raspberry Pi 5 para dictar el ángulo exacto de la dirección Ackermann.
+
+---
+
+## 🔵 3. Masa Común (GND Unificado)
+
+Un aspecto crítico para el correcto funcionamiento del software y los buses de comunicación es el **GND Unificado** (representado por todas las líneas azules del esquema):
+
+* Todas las tierras del sistema (Baterías, Relé, Puente H, Regulador Buck, Raspberry Pi 5 y Servomotor) están interconectadas en el mismo nodo.
+* **Justificación Técnica:** Mantener un plano de masa común evita que existan voltajes flotantes entre los componentes. Esto garantiza que las señales lógicas PWM enviadas desde la Raspberry Pi 5 hacia el servomotor y hacia el Puente H sean leídas sin ruido ni interferencias electromagnéticas.
+
+---
+
+## 🛠️ Resumen de Conexiones por Pines
+
+
+```
+
+[Baterías 18650 (7.4V)] ──► [Relé con Display] ──► [Switch] ──┬──► [Puente H L298N] ──► Motor Grande EV3
+└──► [Buck LM2596] ──┬──► Raspberry Pi 5 ──► AI Camera
+└──► Servo MG995 (VCC/GND)
+▲
+[Raspberry Pi 5 GPIO Pin PWM] ──────────────────────────────────────────────────────────────┘
+
+```
+
+```
+
 
 ****
 ---
@@ -681,24 +735,65 @@ Es el sensor visual principal del robot. A diferencia de las cámaras estándar,
 Este sistema actúa como un LiDAR de estado sólido multizona de alto rendimiento que complementa la visión de la cámara.
 * **Misión Crítica:** Proporciona un mapa de profundidad bidimensional mediante una matriz de hasta $8 \times 8$ zonas independientes. Su función es medir con exactitud matemática la distancia milimétrica hacia los muros laterales y frontales. Al emitir su propia luz infrarroja, permite que el robot mantenga un control PID de centrado perfecto e inmune a los cambios de luz ambiental del recinto de competencia.
 
-### 3. Encoders Ópticos Internos (Motores LEGO EV3)
+### 3. Encoders Ópticos Internos (Motores LEGO EV3 y servomotor)
 
 Hemos eliminado los sensores rotacionales externos acoplados a motores DC convencionales. En su lugar, aprovechamos los **tacómetros digitales (encoders) integrados** tanto en el motor grande (propulsión) como en el motor mediano (dirección) del kit LEGO EV3.
 * **Misión Crítica en Motor Grande (Tracción):** Mide los grados de rotación exactos de las ruedas traseras. El software en Python procesa estos datos para ejecutar algoritmos de **odometría de lazo cerrado**, calculando la distancia recorrida en la pista para planificar con exactitud la frenada, el conteo de vueltas de respaldo y la secuencia de reversa para el estacionamiento en paralelo.
-* **Misión Crítica en Motor Mediano (Dirección):** Proporciona retroalimentación instantánea sobre la posición angular real de las manguetas delanteras. Esto permite saber con precisión milimétrica el ángulo de giro del sistema Ackermann en cada frame, corrigiendo cualquier desviación provocada por la fricción del suelo.
+* **Misión Crítica Servomotor (Dirección):** Proporciona retroalimentación instantánea sobre la posición angular real de las manguetas delanteras. Esto permite saber con precisión milimétrica el ángulo de giro del sistema Ackermann en cada frame, corrigiendo cualquier desviación provocada por la fricción del suelo.
 
   ## 3. Consumo de Energía
 ## 3. Estimación del Consumo Energético Unificado
 
-Dado que el vehículo ha migrado a un sistema de alimentación único basado exclusivamente en baterías de Litio, todo el consumo se consolida en una sola línea de potencia. El consumo estimado bajo condiciones de máxima exigencia en pista (*Time Attack*) es el siguiente:
+Dado que el vehículo ha migrado a un sistema de alimentación único basado exclusivamente en baterías de Litio, todo el consumo se consolida en una sola línea de [potencia. El consumo estimado bajo condiciones de máxima exigencia en pista (*Time Attack*) es el siguiente:
 
-* **Raspberry Pi 5 + Raspberry Pi AI Camera:** $\sim 2.7\text{ A @ 5V}$ (Aproximadamente $13.5\text{ W}$ en picos de inferencia de IA y procesamiento matemático continuo).
-* **Motor Grande LEGO EV3 (Tracción Trasera):** $\sim 0.12\text{ A}$ (en vacío) hasta $\sim 2.0\text{ A}$ (corriente de arranque/bloqueo en aceleración máxima) @ $7.4\text{V} - 9.0\text{V}$.
-* **Motor Mediano LEGO EV3 (Dirección Delantera):** $\sim 0.08\text{ A}$ (en vacío) hasta $\sim 1.2\text{ A}$ (picos de corrección rápida a 60 Hz) @ $7.4\text{V} - 9.0\text{V}$.
-* **Arreglo de 3 Sensores Láser ToF VL53L5CX:** $\sim 120\text{ mA @ 5V}$ (en total, alimentados a través del bus regulado).
 
-> 📊 **Cálculo de Autonomía:** El consumo promedio estimado del sistema en carrera oscila entre los $18\text{ W}$ y $25\text{ W}$. Para cumplir holgadamente con las sesiones de prueba y las mangas oficiales de la WRO 2026, el paquete de baterías de litio seleccionado entrega una capacidad mínima de **$22\text{ Wh}$**, garantizando un funcionamiento estable y sin caídas de tensión por más de 45 minutos continuos.
+# ⚡ Análisis de Consumo Energético y Presupuesto de Potencia
 
+Para garantizar la estabilidad operativa del robot durante las mangas oficiales de la WRO 2026, realizamos un cálculo minucioso del presupuesto de potencia (*Power Budget*) basado en la arquitectura de conexiones eléctricas del sistema.
+
+El circuito se alimenta mediante un arreglo en serie de **2 celdas Li-ion 18650 ($7.4\text{V}$ nominales)**, dividiendo la carga entre una etapa de potencia nativa ($7.4\text{V}$) y una etapa lógica regulada a través del convertidor *Step-Down* LM2596 ($5.0\text{V}$).
+
+---
+
+## 📊 Tabla de Consumo Energético por Componente
+
+| Componente | Línea de Alimentación | Voltaje de Operación | Consumo Promedio | Consumo Pico (Stall / Max) | Potencia Máx. Estimada |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Raspberry Pi 5** | Salida Buck ($5\text{V}$) | $5.0\text{V}$ | $1.5\text{ A}$ | $2.7\text{ A}$ | $13.5\text{ W}$ |
+| **Raspberry Pi AI Camera** | Bus CSI/GPIO Pi 5 | $5.0\text{V}$ | $250\text{ mA}$ | $350\text{ mA}$ | $1.75\text{ W}$ |
+| **Servomotor MG90S / MG995** | Salida Buck ($5\text{V}$) | $5.0\text{V} - 6.0\text{V}$ | $150\text{ mA}$ | $700\text{ mA}$ | $3.5\text{ W}$ |
+| **Motor Grande EV3 (Tracción)** | Puente H (Driver L298N) | $7.4\text{V}$ (Nativo) | $300\text{ mA}$ | $2.0\text{ A}$ | $14.8\text{ W}$ |
+| **Módulo Relé con Display Digital** | Directo Batería | $7.4\text{V}$ (Nativo) | $50\text{ mA}$ | $100\text{ mA}$ | $0.74\text{ W}$ |
+| **Arreglo de Sensores ToF VL53L5CX** | Bus I2C / GPIO Pi 5 | $3.3\text{V} / 5.0\text{V}$ | $100\text{ mA}$ | $150\text{ mA}$ | $0.75\text{ W}$ |
+
+---
+
+## 📈 Resumen Global de Potencia y Eficiencia
+
+* **Tensión Nominal del Banco de Baterías:** $7.4\text{V}$ ($2 \times 3.7\text{V}$ Li-ion 18650 en serie).
+* **Consumo Promedio en Carrera (*Time Attack*):** $\sim 2.35\text{ A}$ @ $7.4\text{V}$ ($\sim 17.4\text{ W}$).
+* **Consumo Máximo Transitorio (Picos de Arranque):** $\sim 5.0\text{ A} - 6.0\text{ A}$ @ $7.4\text{V}$ ($\sim 35\text{ W}$).
+* **Eficiencia del Regulador Step-Down (LM2596):** $\sim 88\% - 90\%$ de conversión hacia la línea de $5\text{V}$.
+
+---
+
+## 🔋 Cálculo de Autonomía en Pista
+
+Utilizando un paquete de celdas 18650 con una capacidad real combinada de **$2200\text{ mAh}$ ($16.28\text{ Wh}$)**:
+
+$$\text{Autonomía Teórica} = \frac{\text{Capacidad de Batería (Wh)}}{\text{Consumo Promedio (W)}} = \frac{16.28\text{ Wh}}{17.4\text{ W}} \approx 0.93\text{ horas} \quad (\approx 56\text{ minutos})$$
+
+> 💡 **Conclusión de Autonomía:** Aplicando un factor de seguridad del $20\%$ para mitigar la degradación térmica y picos imprevistos, el robot garantiza **más de 40 minutos de operación continua a máximo rendimiento**, superando holgadamente la duración de las pruebas de pista de la WRO 2026.
+
+---
+
+## 🛠️ Desglose del Esquemático Eléctrico
+
+1. **Línea Principal de Control:** Las baterías entregan corriente directa al **Relé Digital**, el cual actúa como interruptor general y voltímetro de protección antes de pasar por el **Switch Físico**.
+2. **División de Etapas:**
+   * **Etapa de Potencia ($7.4\text{V}$):** Alimenta directamente el conector de potencia del **Puente H (L298N)** para entregar el mayor torque posible al motor de tracción EV3.
+   * **Etapa Lógica y Control ($5.0\text{V}$):** El regulador **Step-Down** convierte los $7.4\text{V}$ a $5.0\text{V}$ estables, alimentando en paralelo el GPIO de la **Raspberry Pi 5** y el puerto del **Servomotor de Dirección**.
+3. **Manejo de Masa Común (GND Unificado):** Todos los componentes comparten una misma línea de tierra (cable azul en el diagrama), evitando flotaciones de voltaje y garantizando una señal PWM limpia para la dirección y el control del Puente H.
 ---
 
 ## 4. Justificación Técnica de Selección de Componentes
