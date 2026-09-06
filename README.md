@@ -798,12 +798,22 @@ $$\text{Autonomía Teórica} = \frac{\text{Capacidad de Batería (Wh)}}{\text{Co
 
 ## 4. Justificación Técnica de Selección de Componentes
 
-La selección del hardware obedece a criterios estrictos de precisión cinemática, robustez mecánica y velocidad de procesamiento, eliminando módulos genéricos por soluciones de grado de ingeniería:
+La selección del hardware obedece a criterios estrictos de precisión cinemática, robustez mecánica, eficiencia energética y velocidad de procesamiento, reemplazando soluciones de baja especificación por módulos de grado de ingeniería adaptados a la competencia:
 
-* **Motores LEGO EV3 (Grande y Mediano):** Se seleccionaron por encima de los motores DC y servomotores convencionales debido a sus **encoders ópticos internos de alta resolución**. El motor grande nos permite sustituir sensores ópticos externos, calculando la odometría de forma matemática para el control de vueltas y el estacionamiento en reversa. El motor mediano elimina las holguras mecánicas típicas de los servos comerciales pequeños, asegurando que las manguetas del sistema Ackermann mantengan el ángulo exacto exigido por el bucle PID.
-* **Arreglo Láser ToF VL53L5CX:** Reemplaza a los sensores ultrasónicos tradicionales (los cuales sufren de eco y rebotes falsos en las esquinas de la pista). Al medir por Tiempo de Vuelo de fotones infrarrojos en matrices de hasta $8\times8$, este componente proporciona una telemetría milimétrica del ancho y distancia de los muros, siendo completamente inmune a las variaciones de luz del recinto de competencia.
-* **Raspberry Pi AI Camera:** Su inclusión es el pilar del software de navegación. Al procesar redes neuronales directamente en su hardware dedicado (Edge AI), es capaz de clasificar y diferenciar instantáneamente las señales de tráfico rojas y verdes sin consumir ciclos de reloj de la CPU principal de la Raspberry Pi 5. Esto permite balancear la carga de trabajo y ejecutar el control cinemático en tiempo real sin retrasos (*lag*).
-El código de control implementado en Python gestiona la interpretación de los datos de los sensores y actúa en consecuencia, ajustando la dirección, velocidad y decisiones del robot según las condiciones del entorno.
+### 🏎️ Actuadores y Control de Movimiento
+* **Motor Grande LEGO EV3 (Tracción):** Se seleccionó para el eje motriz debido a su encoder óptico interno de alta resolución. Nos permite prescindir de sensores ópticos externos, calculando la odometría de forma matemática para el control exacto de distancias, aceleración y maniobras de estacionamiento.
+* **Driver de Potencia Puente H (L298N):** Encargado de conmutar la corriente hacia el motor grande EV3. Al alimentarse directamente con los **$7.4\text{V}$ nativos** del banco de baterías, entrega el máximo torque y velocidad posibles, permitiendo un control fino del sentido de giro y velocidad mediante Modulación por Ancho de Pulso (PWM).
+* **Servomotor Digital de Piñonería Metálica (MG995 / MG90S):** Sustituye los motores y servomotores convencionales en la dirección Ackermann. Ofrece un torque elevado ($\ge 10\text{ kg}\cdot\text{cm}$) y elimina el juego mecánico (*backlash*) en las manguetas delanteras. Su control mediante impulsos PWM por hardware libera ciclos de procesamiento en la CPU principal.
+
+### 👁️ Sistema de Percepción y Visión Computacional
+* **Arreglo Láser ToF (VL53L5CX):** Reemplaza a los sensores ultrasónicos tradicionales (los cuales sufren de reflexiones falsas y eco en las esquinas). Al medir por Tiempo de Vuelo (*Time-of-Flight*) mediante matrices infrarrojas de $8 \times 8$, proporciona una telemetría milimétrica de la distancia hacia los muros, siendo completamente inmune a las variaciones de luz ambiental del recinto.
+* **Raspberry Pi AI Camera:** Es el pilar del sistema de visión. Al procesar modelos de aprendizaje profundo directamente en su acelerador de red neuronal integrado (*Edge AI*), clasifica y diferencia instantáneamente las señales y obstáculos sin consumir ciclos de reloj de la CPU de la Raspberry Pi 5. Esto elimina el latido (*lag*) en la toma de decisiones dinámicas.
+* **Computadora Central (Raspberry Pi 5):** Coordina la fusión sensorial del arreglo ToF y la cámara de IA, ejecutando el algoritmo de control en Python para ajustar la dirección, la velocidad y la trayectoria del vehículo en tiempo real.
+
+### ⚡ Red Electrolítica y Gestión de Energía
+* **Banco de Baterías Li-ion 18650 ($7.4\text{V}$):** Sustituye los *power banks* comerciales voluminosos. Su arreglo en serie otorga una alta densidad energética y capacidad de descarga en corriente ($\ge 5\text{A}$), reduciendo la masa del chasis y bajando el centro de gravedad.
+* **Convertidor Step-Down Buck (LM2596):** Regulador conmutado de alta eficiencia ($\sim 90\%$) que reduce los $7.4\text{V}$ a unos **$5.0\text{V}$ estables**. Alimenta la Raspberry Pi 5 y el servomotor de dirección, protegiendo la electrónica lógica de bajones de tensión (*brownouts*) cuando el motor de tracción demanda picos de corriente.
+* **Módulo Relé Electrónico con Display Digital:** Funciona como el sistema de gestión y protección eléctrica. Incorpora un voltímetro digital en tiempo real para verificar la carga de las baterías en *pits* y ofrece un aislamiento optoelectrónico que protege los microcontroladores contra retornos inductivos.
 
 
 ---
@@ -884,10 +894,6 @@ A continuación, se presentan las figuras que ilustran el prototipo de nuestro r
 ![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Vehiculo-Fotos/Izquierda.jpeg)
 
 ---
-Aquí tienes el documento redactado en formato **Markdown (`.md`)** listo para copiar y pegar directamente en tu archivo de GitHub (`README.md` o la sección correspondiente de tu wiki).
-
-Incluye la estructura completa, el título solicitado y los cambios estratégicos del paso al servomotor **MG995** y a las **pilas 18650**:
-
 ```markdown
 # 🔄 Cambios Estratégicos en la Arquitectura y Cambio de Componentes
 
