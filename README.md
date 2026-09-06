@@ -444,8 +444,7 @@ La **Raspberry Pi AI Camera** está específicamente diseñada para aprovechar e
 * **Reducción de latencia y ancho de banda:** Los datos procesados de IA (como la detección de objetos) se generan directamente en la cámara, minimizando la latencia y reduciendo significativamente el ancho de banda necesario en el bus de datos CSI.
 
 ---
-
-La **Raspberry Pi AI Camera** es fundamental para nuestro robot porque permite la **IA en el borde**, procesando visión directamente en el chip. Esto libera recursos de la Pi 5, reduce la latencia y la necesidad de ancho de banda. Su **alta resolución** y la capacidad de enviar **metadatos de IA pre-procesados** simplifican el desarrollo. Además, es **energéticamente eficiente**, clave para la autonomía del robot. En definitiva, convierte a nuestro robot en un agente **inteligente y reactivo** capaz de percibir e interpretar su entorno de forma autónoma.
+La **Raspberry Pi AI Camera** es fundamental para nuestro robot porque permite la **IA en el borde**, procesando visión directamente en el chip. Esto libera recursos de la Pi 5, reduce la latencia y la necesidad de ancho de banda. Su **alta resción** y la capacidad de enviar **metadatos de IA pre-procesados** simplifican el desarrollo. Además, es **energéticamente eficiente**, clave para la autonomía del robot. En definitiva, convierte a nuestro robot en un agente **inteligente y reactivo** capaz de percibir e interpretar su entorno de forma autónoma.
 
 ![La Raspberry Pi AI Camera](https://github.com/TripleThreat19/Triple-Threat-AI/blob/main/Schemes/Camara%20Rasberry%20PI%205.jpg)
 
@@ -575,6 +574,34 @@ En esencia, el regulador es fundamental para la **fiabilidad y la prolongación 
 
 
 ![Regulador de Voltaje](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Schemes/Regulador%20Step%20Down.jpg)
+
+#### 📸 Relé Electrónico con Display (Módulo de Control de Potencia Digital)
+
+Un relé electrónico con display es un interruptor conmutado digital de estado sólido o electromecánico que incorpora una pantalla (usualmente LED de 7 segmentos o pantalla OLED) y un microcontrolador interno. Su función principal es abrir o cerrar circuitos de alta potencia mediante señales de control de bajo voltaje, permitiendo visualizar en tiempo real parámetros críticos como el estado de conmutación, el voltaje de la línea, la corriente o el tiempo de activación programado.
+
+A diferencia de los relés mecánicos simples que solo reaccionan al paso de corriente en la bobina, este módulo permite monitorear y gestionar de forma inteligente el flujo de energía sin depender de pantallas externas.
+
+---
+**_Características Sobresalientes:_**
+
+* **Monitoreo Visual en Tiempo Real (Display Integrado):** Muestra de forma inmediata el estado del canal (ON/OFF), el voltaje de la batería principal, la corriente consumida o temporizadores de corte de energía.
+* **Aislamiento Optoelectrónico (Optoacoplador):** Separa físicamente el circuito de control de bajo voltaje (ej. $3.3\text{V} / 5\text{V}$ de la Raspberry Pi o Arduino) del circuito de alta potencia de los motores, protegiendo los chips lógicos contra retornos de corriente electromagnética (EMF).
+* **Conmutación Inteligente / Temporizada:** Permite programar retardos de encendido o apagado (Time-Delay), protegiendo la electrónica de picos de corriente durante la etapa de arranque (Inrush Current).
+* **Retroalimentación de Seguridad y Diagnóstico:** Facilita el diagnóstico rápido en boxes (Pits) durante la competencia; el equipo puede verificar con un vistazo al display si el módulo tiene energía o si se ha disparado una protección.
+
+
+---
+**_¿Qué beneficios trae a nuestro robot en la WRO 2026?_**
+
+En una arquitectura de carrera donde compartimos la energía de la batería de litio entre la Raspberry Pi 5 y motor LEGO EV3 junto a un servo motor, la integración de este módulo aporta los siguientes beneficios clave:
+
+* **Diagnóstico e Inspección Rápida en Carrera:** Durante las pruebas y mangas de la WRO, no hay tiempo para conectar un multímetro. El display incorporado nos permite verificar instantáneamente la salud y el voltaje de la batería de litio, asegurándonos de no salir a la pista con una batería descargada que comprometa el rendimiento de la IA o los sensores ToF.
+* **Protocolo de Encendido Secuencial (Protección de la Raspberry Pi 5):** El software o la lógica del relé permite retrasar el suministro de corriente a los motores LEGO EV3 hasta que la Raspberry Pi 5 haya arrancado por completo su sistema operativo. Esto evita que los picos de arranque del motor grande afecten el proceso de inicialización de la computadora central.
+* **Mayor Autonomía y Eficiencia para el Time Attack:** Como el regulador convierte la energía con una eficiencia cercana al $90\%$, no desperdicia la carga de la batería en forma de calor. Esto nos otorga mayor tiempo de prueba en pista y asegura que el robot mantenga el mismo rendimiento y velocidad constante desde la primera hasta la última vuelta.
+* **Reducción de Peso y Compactación de Espacio:** Al no requerir disipadores metálicos pesados, nos permite mantener el chasis liviano y dentro de las dimensiones y restricciones de peso oficiales del reglamento de la WRO.
+  
+
+![La Raspberry Pi AI Camera](https://github.com/TripleThreat19/Triple-Threat-AI/blob/main/Schemes/Camara%20Rasberry%20PI%205.jpg)
 
 
 ---
