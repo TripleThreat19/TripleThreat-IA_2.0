@@ -366,7 +366,6 @@ Explicación del Diagrama Expuesto
 
 Aquí tienes la explicación técnica detallada del **diagrama de cableado (esquemático eléctrico)**, redactada en formato **Markdown (`.md`)** lista para copiar y pegar directamente en la documentación de tu repositorio de GitHub:
 
-```markdown
 # 🔌 Explicación Detallada del Diagrama de Cableado (Esquemático Eléctrico)
 
 El diseño del circuito eléctrico del robot sigue una arquitectura **de fuente única con división de etapas (Potencia vs. Lógica)**. Esta topología garantiza que los motores de alta demanda de corriente no interfieran con la sensibilidad de la **Raspberry Pi 5**, la **AI Camera** y los sensores láser ToF.
@@ -431,7 +430,7 @@ Un aspecto crítico para el correcto funcionamiento del software y los buses de 
 
 ```
 
-```
+
 
 
 ****
@@ -920,77 +919,6 @@ El pipeline de navegación está diseñado bajo una arquitectura modular desacop
 | **D5** | Votos del Sentido | Registro de votos acumulados y sentido de giro bloqueado. | `5.1` | `5.1` |
 
 ---
-
-```python
-
-## 💻 Algoritmo Principal en Pseudocódigo
-
-# ==============================================================================
-# ALGORITMO PRINCIPAL DE NAVEGACIÓN Y CONTROL
-# ==============================================================================
-
-Módulos: Adquisición, Percepción, Navegación, Actuadores, PilotoWeb
-
-PROCEDIMIENTO InicializarSistema():
-    ConfigurarBusI2C(frecuencia = 400kHz)
-    InicializarSensoresToF(VL53L5CX_1, VL53L5CX_2, VL53L5CX_3)
-    InicializarPWM(ServoDirección, DriverL298N)
-    CargarConstantes(D4)
-    EstadoRobot = DESARMADO
-FIN PROCEDIMIENTO
-
-PROCEDIMIENTO BuclePrincipal():
-    InicializarSistema()
-    
-    MIENTRAS SistemaActivo ES VERDADERO HACER:
-        # 1.0 Adquisición de Datos
-        RejillasCrudas = AdquirirRejillasI2C()  # Escribe en D1
-        
-        SI NO RejillasCrudas.EsFotogramaNuevo ENTONCES:
-            CONTINUAR  # Espera la siguiente lectura sin saturar la CPU
-        FIN SI
-        
-        # 2.0 y 3.0 Procesamiento de Percepción
-        ZonasVálidas = FiltrarPuntosCorruptos(RejillasCrudas)
-        DistanciasVector = ReducirAMatriz3Zonas(ZonasVálidas)
-        
-        # 4.0 Filtrado Temporal
-        DistanciasSuavizadas = AplicarMedianaYModa(DistanciasVector, D2)
-        
-        # Lectura de Seguridad y Control del Piloto
-        EstadoArmado = LeerEstadoPiloto(D4)
-        
-        SI NO EstadoArmado.LatidoActivo ENTONCES:
-            DetenerActuadores()
-            EstadoRobot = DESARMADO
-            CONTINUAR
-        FIN SI
-        
-        # 5.0 Máquina de Estados y Decisión de Maniobra
-        SI DistanciasSuavizadas.Frente <= UMBRAL_PELIGRO ENTONCES:
-            Maniobra = EVALUAR_ANTICHOQUE
-        ELIJA SI DeteccionEsquina(DistanciasSuavizadas) ENTONCES:
-            SI NO SentidoCongeladoEN(D5) ENTONCES:
-                SentidoGiro = VotarSentidoGiro(DistanciasSuavizadas, D5)  # 5.1
-            FIN SI
-            Maniobra = EJECUTAR_GIRO_ESQUINA
-        SINO:
-            Maniobra = SEGUIR_LINEA_RECTA
-        FIN SI
-        
-        ComandoControl = CalcularVectorTraccionYVolante(Maniobra, D4)  # Escribe en D3
-        
-        # 6.0 Salida a Hardware
-        AplicarPWMActuadores(ComandoControl.Traccion, ComandoControl.Volante)
-        EnviarTelemetriaWeb(D1, D3)
-        
-    FIN MIENTRAS
-FIN PROCEDIMIENTO
-
-
-
----
-
 
 
  la arquitectura modular desacoplada en procesos independientes:
