@@ -572,6 +572,7 @@ El **Regulador de Voltaje Electrónico** es indispensable para el robot porque a
 
 En esencia, el regulador es fundamental para la **fiabilidad y la prolongación de la vida útil** de los componentes eléctricos del robot.
 
+"Utilizamos un regulador Step-Down para alimentar la Raspberry Pi 5 y los sensores a $5\text{V}$ estables a partir de nuestra batería principal. Gracias a su eficiencia del $90\%$, evitamos reinicios por caídas de tensión cuando los motores EV3 demandan picos de corriente, garantizando la estabilidad de la IA y reduciendo el peso en el chasis."
 
 ![Regulador de Voltaje](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Schemes/Regulador%20Step%20Down.jpg)
 
@@ -597,9 +598,10 @@ En una arquitectura de carrera donde compartimos la energía de la batería de l
 
 * **Diagnóstico e Inspección Rápida en Carrera:** Durante las pruebas y mangas de la WRO, no hay tiempo para conectar un multímetro. El display incorporado nos permite verificar instantáneamente la salud y el voltaje de la batería de litio, asegurándonos de no salir a la pista con una batería descargada que comprometa el rendimiento de la IA o los sensores ToF.
 * **Protocolo de Encendido Secuencial (Protección de la Raspberry Pi 5):** El software o la lógica del relé permite retrasar el suministro de corriente a los motores LEGO EV3 hasta que la Raspberry Pi 5 haya arrancado por completo su sistema operativo. Esto evita que los picos de arranque del motor grande afecten el proceso de inicialización de la computadora central.
-* **Mayor Autonomía y Eficiencia para el Time Attack:** Como el regulador convierte la energía con una eficiencia cercana al $90\%$, no desperdicia la carga de la batería en forma de calor. Esto nos otorga mayor tiempo de prueba en pista y asegura que el robot mantenga el mismo rendimiento y velocidad constante desde la primera hasta la última vuelta.
-* **Reducción de Peso y Compactación de Espacio:** Al no requerir disipadores metálicos pesados, nos permite mantener el chasis liviano y dentro de las dimensiones y restricciones de peso oficiales del reglamento de la WRO.
-  
+* **Parada de Emergencia y Protección Automática (Corte por Bajo Voltaje):** Si el voltaje de las baterías cae por debajo del límite seguro (para evitar dañar celdas Li-ion/LiPo), el módulo puede cortar automáticamente la potencia hacia la etapa de motores, alertando visualmente en el display y protegiendo el sistema eléctrico de sobrecargas o cortocircuitos.
+* **Conmutación Segura desde la Raspberry Pi 5 / Arduino:** Permite que las señales lógicas de los pines GPIO abran o cierren líneas de alta corriente con total seguridad, garantizando cero interferencias electromagnéticas sobre el bus I2C de la AI Camera y los sensores láser VL53L5CX.
+
+"Integramos un relé electrónico con display para gestionar de manera inteligente la alimentación principal del robot. Nos otorga telemetría visual inmediata del voltaje en boxes y proporciona un aislamiento completo entre los pines de la Raspberry Pi 5 y los motores LEGO EV3, evitando ruidos electromagnéticos y protegiendo el sistema contra sobredescargas de la batería."
 
 ![La Raspberry Pi AI Camera](https://github.com/TripleThreat19/Triple-Threat-AI/blob/main/Schemes/Camara%20Rasberry%20PI%205.jpg)
 
