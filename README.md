@@ -360,7 +360,7 @@ Nuestro sistema electrónico, que impulsa y controla cada movimiento de nuestro 
   
 A continuación, se presentará el Diagrama de Cableado que ilustra cómo estos componentes se interconectan para funcionar en armonía.
 
-![Motor Codificador Optico Makeblock 180](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Schemes/Dise%C3%B1o%20sin%20t%C3%ADtul)
+![Motor Codificador Optico Makeblock 180](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Schemes/Dise%C3%B1o%20sin%20t%C3%ADtulo.jpg)
 
 Explicación del Diagrama Expuesto
 
