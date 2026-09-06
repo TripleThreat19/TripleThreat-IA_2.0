@@ -850,15 +850,149 @@ Paralelamente, para asegurar que el robot se mantenga dentro de su trayectoria, 
 # DIAGRAMAS DE LOS CODIGOS 
 
 
-----
+# 🧠 Arquitectura de Software y Flujo de Datos del Sistema de Navegación
 
-Este documento presenta los diagramas de código de nuestro prototipo de robot, donde este esquivara las paredes tanto internas como externas de la pista. El objetivo es ofrecer una comprensión clara y estructurada de la arquitectura de software y la lógica de control que permiten al robot navegar de forma autónoma en entornos con obstáculos.
+En este apartado se describe la arquitectura de control, el procesamiento de señales y la lógica de toma de decisiones implementada en el robot. El sistema procesa lecturas de sensores de tiempo de vuelo (ToF), filtra las perturbaciones físicas, determina la maniobra mediante una máquina de estados y aplica la respuesta correspondiente a los actuadores de tracción y dirección.
 
-Los diagramas visualizan el flujo de procesamiento de información, desde la percepción del entorno mediante los sensores hasta la toma de decisiones para evitar colisiones y la ejecución de movimientos por parte de los actuadores. Se detallará la interacción entre los módulos de detección de obstáculos, los algoritmos de navegación y la manipulación de los sistemas de propulsión y dirección.
+---
 
-Esta representación gráfica facilitará el entendimiento de la secuencia lógica y las interdependencias entre los componentes de software, proporcionando una visión integral del funcionamiento autónomo del robot.
+## 📐 Diagrama de Flujo de Datos (DFD)
+
+El pipeline de navegación está diseñado bajo una arquitectura modular desacoplada en procesos independientes:
+
+[3x Sensado VL53L5CX] ──► (1.0 Adquisición) ──► (2.0 Depuración) ──► (3.0 Reducción)
+│
+[Piloto Web] ◄── Telemetría ── (6.0 Actuadores) ◄── (5.0 Decisión) ◄── (4.0 Suavizado)
+│                                                    ▲
+└────── Parámetros / Armado ─────────────────────────┘
 
 
+---
+
+## ⚙️ Desglose de Procesos
+
+### 1.0 Adquisición de Rejillas (`arranque.py` / `monitor.py`)
+* **Función:** Captura sincrónica de las matrices de $4 \times 4$ zonas de los tres sensores Láser ToF VL53L5CX a través del bus I²C.
+* **Mecanismo:** Estampa un sello temporal (*timestamp*) y número de fotograma (*frame number*) a cada captura para garantizar la trazabilidad del dato en el bus.
+
+### 2.0 Depuración y Filtrado de Zonas (`percepcion.py`)
+* **Función:** Eliminación de lecturas corruptas o físicamente imposibles generadas por rebotes o inclinación del chasis.
+* **Criterios de Descarte:**
+  * Si el chasis sufre un cabeceo exabrupto (*pitch*), la matriz frontal completa es ignorada temporalmente.
+  * Se aplica un filtro de calidad zona por zona descartando lecturas con estados no fiables ($\notin \{5, 9, 4, 13\}$), distancias fuera del rango efectivo ($d < 25\text{ mm}$ o $d > \text{anillo}$), alta variabilidad ($\sigma > \max(15, 8\% \cdot d)$) o señal débil ($\text{señal} < 2$).
+
+### 3.0 Reducción a Vector de Distancias (`percepcion.py`)
+* **Función:** Transforma una matriz bidimensional cruda de 48 zonas ($3 \times 16$) en un vector compacto de 3 valores representativos (`frente`, `izquierda`, `derecha`).
+* **Lógica:** Selecciona el segundo punto más cercano por lado para evitar falsos positivos y asigna a cada flanco una etiqueta categórica de estado (`pared`, `cerca`, `libre` o `ciego`).
+
+### 4.0 Suavizado Temporal (`navegacion.py`)
+* **Función:** Atenuación del ruido de alta frecuencia en las mediciones antes de entrar a la máquina de estados.
+* **Filtros Aplicados:**
+  * **Frente:** Filtro de mediana con una ventana temporal de 3 fotogramas.
+  * **Laterales:** Filtro de moda (categoría mayoritaria) sobre una ventana temporal de 7 fotogramas.
+  * **Sincronización:** La actualización del algoritmo se dispara únicamente al recibir un fotograma nuevo, evitando re-calculos innecesarios en el bucle principal.
+
+### 5.0 Decisión de Maniobra y Selección de Sentido (`navegacion.py`)
+* **Máquina de Estados de 5 Prioridades:**
+  1. *Esquina:* Detección de giro obligado.
+  2. *Antichoques:* Maniobra evasiva de emergencia.
+  3. *Recuperación del Volantazo:* Corrección progresiva de trayectoria tras un giro brusco.
+  4. *Deriva:* Compensación de alineación lateral.
+  5. *Recta Libre:* Aceleración constante en tramo despejado.
+* **Subproceso 5.1 (Votar Sentido):** En la primera esquina del circuito, evalúa cuál lado presenta un perfil más abierto, emite un voto y congela la dirección de giro (`IZQ` / `DER`) para el resto de las vueltas.
+
+### 6.0 Aplicación a Actuadores (`actuadores.py`)
+* **Función:** Conversión del vector de comando (`tracción`, `volante`) normalizado en el rango $[-1, 1]$ a señales físicas para los componentes hardware:
+  * **Dirección:** Mapeo a microsegundos ($\mu\text{s}$) de pulso PWM para el servomotor ($500\mu\text{s} - 2000\mu\text{s}$).
+  * **Tracción:** Mapeo a ciclo de trabajo (*Duty Cycle*) PWM hacia el Driver Puente H L298N.
+* **Mecanismo de Seguridad (*Watchdog*):** Si se pierde el pulso de armado enviado desde el tablero web o falla el indicador de latido (*heartbeat*), los actuadores se detienen inmediatamente.
+
+---
+
+## 💾 Almacenes de Datos en Memoria (D1 - D5)
+
+| Identificador | Nombre del Almacén | Contenido | Proceso Escritor | Procesos Lectores |
+| :--- | :--- | :--- | :--- | :--- |
+| **D1** | Rejillas Vigentes | Matriz cruda (distancia, estado, señal, $\sigma$), FPS y número de fotograma. | `1.0` | `2.0` |
+| **D2** | Ventanas Temporales | Historial de las últimas 3 lecturas frontales y 7 lecturas laterales. | `4.0` | `4.0` |
+| **D3** | Plan Vigente | Estado de la máquina, sentido congelado, conteo de esquinas y comandos de control. | `5.0` | `6.0`, `Piloto Web` |
+| **D4** | Constantes y Armado | Parámetros de velocidad, umbrales de peligro, tiempos de giro y estado del *watchdog*. | `Piloto Web` | `5.0`, `6.0` |
+| **D5** | Votos del Sentido | Registro de votos acumulados y sentido de giro bloqueado. | `5.1` | `5.1` |
+
+---
+
+## 💻 Algoritmo Principal en Pseudocódigo
+
+# ==============================================================================
+# ALGORITMO PRINCIPAL DE NAVEGACIÓN Y CONTROL
+# ==============================================================================
+
+Módulos: Adquisición, Percepción, Navegación, Actuadores, PilotoWeb
+
+PROCEDIMIENTO InicializarSistema():
+    ConfigurarBusI2C(frecuencia = 400kHz)
+    InicializarSensoresToF(VL53L5CX_1, VL53L5CX_2, VL53L5CX_3)
+    InicializarPWM(ServoDirección, DriverL298N)
+    CargarConstantes(D4)
+    EstadoRobot = DESARMADO
+FIN PROCEDIMIENTO
+
+PROCEDIMIENTO BuclePrincipal():
+    InicializarSistema()
+    
+    MIENTRAS SistemaActivo ES VERDADERO HACER:
+        # 1.0 Adquisición de Datos
+        RejillasCrudas = AdquirirRejillasI2C()  # Escribe en D1
+        
+        SI NO RejillasCrudas.EsFotogramaNuevo ENTONCES:
+            CONTINUAR  # Espera la siguiente lectura sin saturar la CPU
+        FIN SI
+        
+        # 2.0 y 3.0 Procesamiento de Percepción
+        ZonasVálidas = FiltrarPuntosCorruptos(RejillasCrudas)
+        DistanciasVector = ReducirAMatriz3Zonas(ZonasVálidas)
+        
+        # 4.0 Filtrado Temporal
+        DistanciasSuavizadas = AplicarMedianaYModa(DistanciasVector, D2)
+        
+        # Lectura de Seguridad y Control del Piloto
+        EstadoArmado = LeerEstadoPiloto(D4)
+        
+        SI NO EstadoArmado.LatidoActivo ENTONCES:
+            DetenerActuadores()
+            EstadoRobot = DESARMADO
+            CONTINUAR
+        FIN SI
+        
+        # 5.0 Máquina de Estados y Decisión de Maniobra
+        SI DistanciasSuavizadas.Frente <= UMBRAL_PELIGRO ENTONCES:
+            Maniobra = EVALUAR_ANTICHOQUE
+        ELIJA SI DeteccionEsquina(DistanciasSuavizadas) ENTONCES:
+            SI NO SentidoCongeladoEN(D5) ENTONCES:
+                SentidoGiro = VotarSentidoGiro(DistanciasSuavizadas, D5)  # 5.1
+            FIN SI
+            Maniobra = EJECUTAR_GIRO_ESQUINA
+        SINO:
+            Maniobra = SEGUIR_LINEA_RECTA
+        FIN SI
+        
+        ComandoControl = CalcularVectorTraccionYVolante(Maniobra, D4)  # Escribe en D3
+        
+        # 6.0 Salida a Hardware
+        AplicarPWMActuadores(ComandoControl.Traccion, ComandoControl.Volante)
+        EnviarTelemetriaWeb(D1, D3)
+        
+    FIN MIENTRAS
+FIN PROCEDIMIENTO
+
+
+
+---
+
+
+
+ la arquitectura modular desacoplada en procesos independientes:
+ 
 ![Motor Codificador Optico Makeblock 180](https://github.com/TripleThreat19/Triple-Threat-AI/blob/main/Other/Diagrama%20de%20Flujo%20del%20Codigo%201%20Desafio%20Abierto%20.png)
 
 
