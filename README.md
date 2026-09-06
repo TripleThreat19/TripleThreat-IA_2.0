@@ -1188,5 +1188,8 @@ Las zonas ROI activas se colorean de manera homogénea en **Naranja**, registran
 Al fusionar las tres lecturas filtradas por el horizonte, el algoritmo determina que el robot está navegando en un pasillo donde el lado izquierdo está muy cerca ($83\text{ mm}$) y el derecho ofrece un margen intermedio ($394\text{ mm}$). El sistema ordena al **motor mediano EV3** girar sutilmente hacia la derecha para centrarse en el pasillo libre de $1.2\text{ metros}$ detectado por el sensor central, estabilizando la trayectoria de forma predictiva.
 # Codigo del Robot/Solución de problemas
 
+## 🧠 Avances y Errores 
+
+
 
 ```python
