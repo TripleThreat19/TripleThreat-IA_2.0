@@ -574,7 +574,7 @@ El **Regulador de Voltaje Electrónico** es indispensable para el robot porque a
 En esencia, el regulador es fundamental para la **fiabilidad y la prolongación de la vida útil** de los componentes eléctricos del robot.
 
 
-![Regulador de Voltaje](https://github.com/TripleThreat19/Triple-Threat-AI/blob/main/Schemes/Regulador%20de%20voltaje%201.jpg)
+![Regulador de Voltaje](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Schemes/Regulador%20Step%20Down.jpg)
 
 
 ---
