@@ -820,9 +820,18 @@ La selección del hardware obedece a criterios estrictos de precisión cinemáti
 
 ## 🚗 Gestión de Movilidad
 
-Este robot, dise, se mueve como un coche: sus ruedas traseras lo impulsan y las ruedas delanteras directrices lo guían. Su diseño mecánico, detallado en el modelo 3D, busca ser robusto y ligero, con espacio para todos los componentes.
+E# 🏎️ Diseño Mecánico y Arquitectura del Chasis Híbrido
 
-La dirección es clave: un servomotor mueve las ruedas delanteras, controlando los giros mediante un mecanismo de dirección (tipo Ackerman). Un controlador coordina estos movimientos para lograr una maniobrabilidad precisa. En resumen, es un vehículo ágil, diseñado para el control exacto de su trayectoria..
+El vehículo utiliza una configuración cinemática de tipo automóvil (*Ackermann Steering*): las ruedas traseras proporcionan la fuerza de tracción principal, mientras que el eje delantero gestiona la dirección orientable. Su estructura física destaca por un **diseño híbrido sostenible y modular**, combinando la flexibilidad de las piezas **LEGO EV3**, la reutilización de componentes de ingeniería de nuestro robot anterior y diseños customizados propios.
+
+### ⚙️ Integración Mecánica y Componentes Estructurales
+
+* **Chasis Rígido con Piezas LEGO EV3:** Se utilizan vigas y elementos estructurales de LEGO EV3 como esqueleto base para mantener la rigidez del chasis y permitir un acople perfecto con el motor grande de tracción trasera y su sistema de transmisión.
+* **Bases 3D Recicladas (Optimización de Recursos):** En línea con las buenas prácticas de ingeniería y sostenibilidad, reutilizamos las bases de fijación impresas en 3D de nuestro robot de la edición pasada. Estas placas y soportes adaptados nos permiten montar de forma segura y limpia el circuito eléctrico: las celdas Li-ion 18650, el driver L298N, el regulador Step-Down LM2596 y el módulo de relé con display.
+* **Módulo Personalizado para la Cámara de IA (Diseño Propio):** Diseñamos e imprimimos en 3D un soporte exclusivo y dedicado para la **Raspberry Pi AI Camera**. Este módulo coloca la cámara a la altura e inclinación exactas necesarias para optimizar el campo de visión (*FOV*), aislando el lente de las vibraciones del chasis para garantizar un encuadre estable durante el reconocimiento de los pilares.
+* **Dirección Tipo Ackermann:** Un servomotor digital acciona el mecanismo de dirección sobre las ruedas delanteras. Al ajustar los ángulos de giro de forma asimétrica, se evita el derrape de las llantas en curvas cerradas y se garantiza un control de trayectoria de alta precisión.
+
+Esta combinación entre piezas LEGO EV3, el reciclaje técnico de bases 3D anteriores y el desarrollo de nuestro propio módulo para la cámara da como resultado un vehículo ágil, robusto y preparado para las exigencias de la WRO 2026.
 
 ---
 # *Lenguaje de Programación*
