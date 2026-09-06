@@ -474,15 +474,32 @@ Ambos motores (Grande y Mediano) operan como un sistema de **lazo cerrado** grac
 
 ###   Servomotor
 
-* **Rol en el Robot:** Control Angular del Mecanismo Ackermann (Eje Delantero).
-* **Control de Posición Preciso:** Este motor sustituye al servomotor comercial clásico. Aprovechamos su alta resolución para mover las ruedas delanteras a ángulos específicos (ej. $-15^\circ$ para esquivar un pilar izquierdo, $+22^\circ$ para una curva cerrada a la derecha). Una vez alcanzado el ángulo, el lazo cerrado bloquea el motor en esa posición, resistiendo las fuerzas de fricción de las ruedas contra el suelo.
-* **Ventaja Dinámica:** Al ser más ligero y compacto que el motor grande, reduce la inercia en el tren delantero, permitiendo correcciones de trayectoria sumamente rápidas generadas por los frames de la Raspberry Pi AI Camera a alta frecuencia ($60\text{ Hz}$).
+Servomotor
+Un servomotor es un tipo de motor especial que se diferencia de los motores de corriente continua (DC) o alterna (AC) convencionales por su capacidad de controlar con precisión su posición angular, velocidad y, en algunos casos, su aceleración. Piensa en él como un motor que no solo gira, sino que sabe exactamente dónde está y puede ir a una posición específica y mantenerla, incluso si hay una fuerza externa que intenta moverlo.
+
+---
+
+**_Características Principales:_**
+
+* **Control de Posición Preciso:** Esta es su característica principal. A diferencia de un motor DC que gira libremente cuando se le aplica voltaje, un servomotor puede ser instruido para moverse a un ángulo específico (por ejemplo, 45 grados, 90 grados, etc.) y mantenerse allí.
+* **Sistema de Lazo Cerrado:** Un servomotor siempre forma parte de un sistema de "lazo cerrado". Esto significa que tiene un mecanismo de retroalimentación (generalmente un potenciómetro o un encoder) que constantemente informa al controlador sobre la posición actual del eje del motor. El controlador compara esta posición con la posición deseada y ajusta la energía al motor para corregir cualquier desviación.
+* **Componentes Internos:**
+    * **Motor DC o AC:** El motor eléctrico real que genera el movimiento.
+    * **Engranajes reductores:** Un sistema de engranajes que reduce la velocidad del motor pero aumenta su torque (fuerza de giro), permitiendo movimientos más controlados y con mayor fuerza.
+    * **Sensor de Posición (Potenciómetro/Encoder):** Mide la posición actual del eje del motor y envía esta información al controlador.
+* **Tipos de Señal de Control:** Generalmente se controlan mediante señales de Modulación por Ancho de Pulso (PWM). La duración del pulso determina la posición a la que debe moverse el servomotor.
+
+---
+
+El **servomotor** es crucial para nuestro robot porque permite un **control de posición angular preciso**, a diferencia de los motores DC simples. Esto es fundamental para que el robot realice **movimientos exactos y articulados**, como orientar cámaras o manipular objetos. Su sistema de lazo cerrado y el control por PWM simplifican la programación de movimientos complejos, asegurando que el robot interactúe con su entorno de forma controlada y efectiva.
+
+![Servomotor](https://github.com/TripleThreat19/Triple-Threat-AI/blob/main/Schemes/servomotor.jpg)
 
 ---
 
 ### 📊 Tabla Comparativa de Aplicación en Competencia
 
-| Característica | Motor Grande EV3 (Tracción) | Motor Mediano EV3 (Dirección) |
+| Característica | Motor Grande EV3 (Tracción) | Servo Motor (Dirección) |
 | :--- | :--- | :--- |
 | **Prioridad de Control** | Velocidad constante y Torque elevado. | Posición angular milimétrica y Rapidez. |
 | **Uso del Encoder** | Odometría, cálculo de distancia y frenado dinámico. | Alineación precisa de manguetas y control PID de centrado. |
