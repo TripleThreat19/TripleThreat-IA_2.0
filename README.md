@@ -1361,9 +1361,70 @@ Para cumplir con la normativa de la WRO (que exige un arranque limpio e inmediat
 #### 💡 Lección Aprendida e Impacto
 Mediante la caracterización empírica del puerto JST y la implementación del relé como adaptador de señal, resolvimos una incompatibilidad crítica entre componentes de potencia sin reemplazar hardware ni añadir circuitos complejos de estado sólido. El sistema garantiza un encendido robusto y confiable en pista con solo presionar el switch principal del vehículo.
 
+---
 
+# 🧪 Protocolo de Pruebas y Validación (*Testing Pipeline*)
 
+Este documento detalla los procedimientos de prueba necesarios para validar el correcto funcionamiento del hardware, electrónica y algoritmos de software antes de la competición.
 
+---
+
+## 1. Pruebas de Percepción (Sensores ToF)
+* **Objetivo:** Verificar la precisión de las matrices $4 \times 4$ y el correcto filtrado de zonas.
+* **Procedimiento:**
+  1. Posicionar el robot frente a una superficie plana a $300\text{ mm}$.
+  2. Ejecutar el script `python3 tests/test_percepcion.py`.
+  3. Comprobar en la consola que la reducción a 3 zonas (`frente`, `izquierda`, `derecha`) entregue un margen de error menor al $\pm 5\%$.
+
+## 2. Pruebas de Inferencia de Visión (NPU Hailo-8L)
+* **Objetivo:** Confirmar la tasa de cuadros por segundo (FPS) y la estabilidad del modelo YOLO.
+* **Procedimiento:**
+  1. Colocar pilares rojos y verdes a distintas distancias ($20\text{ cm}$ a $150\text{ cm}$) bajo diferentes condiciones de luz.
+  2. Ejecutar `python3 tests/test_yolo_hailo.py`.
+  3. **Criterio de Aceptación:** El pipeline debe procesar la imagen a más de $30\text{ FPS}$ manteniendo una confianza de detección ($Confidence$) $> 0.75$.
+
+## 3. Prueba de Bucle de Control y Actuadores
+* **Objetivo:** Validar que la respuesta del servomotor y motor de tracción responda a la máquina de estados sin latencia.
+* **Procedimiento:**
+  1. Elevar el chasis del robot para que las ruedas no toquen el suelo.
+  2. Simular un obstáculo frontal acercando un objeto a menos de $200\text{ mm}$ del sensor frontal.
+  3. Verificar que el servomotor gire al ángulo máximo de evasión y que la velocidad PWM reduzca su ciclo de trabajo (*Duty Cycle*) en un $40\%$.
+
+---
+
+## 🧠 Arquitectura de Software y Estrategia de Evasión
+
+---
+
+### 1. Algoritmos de Procesamiento y Toma de Decisiones
+
+El programa principal se divide en tres módulos independientes para garantizar baja latencia en la inferencia ($>30\text{ FPS}$):
+
+* **Módulo `percepcion_tof.py`:**
+  * Lee de forma asíncrona las matrices de $8 \times 8$ zonas de los tres sensores VL53L5CX.
+  * Reduce los datos a 3 zonas de cobertura (`frente`, `izquierda`, `derecha`) aplicando un **filtro de mediana** temporal sobre las últimas 3 muestras para descartar lecturas ruidosas.
+
+* **Módulo `vision_hailo.py`:**
+  * Procesa la secuencia de imágenes de la cámara Raspberry Pi en la NPU Hailo-8L mediante el modelo YOLO.
+  * Aplica un **algoritmo de votación por moda** sobre una ventana deslizante de 5 fotogramas ($N=5$). Un pilar solo se declara válido si se detecta con una confianza ($Confidence$) $> 0.70$ en al menos 3 de los 5 fotogramas, eliminando falsos positivos por parpadeo de luz.
+
+* **Módulo `navegacion_control.py`:**
+  * Implementa un **Controlador Proporcional (P)** basado en el desplazamiento lateral del centro del carril detectado:
+$$\theta_{\text{dirección}} = K_p \cdot e(t)$$
+  donde $e(t)$ es el error entre el centro óptimo del carril y la posición calculada del robot.
+  * **Regla de Evasión Obligatoria WRO:**
+    * **Pilar Rojo:** El robot aplica un viraje hacia la **derecha** (pasando el pilar por su lado izquierdo).
+    * **Pilar Verde:** El robot aplica un viraje hacia la **izquierda** (pasando el pilar por su lado derecho).
+
+---
+
+### 2. Casos Límite y Mitigación de Fallas (*Edge Cases*)
+
+| Escenario Crítico | Modo de Falla Potencial | Mecanismo de Mitigación Implementado |
+| :--- | :--- | :--- |
+| **Pilar en punto ciego cercano** | La cámara pierde de vista la base del pilar al estar muy cerca del chasis. | El estado de evasión se mantiene activo por tiempo/distancia usando la matriz de los sensores ToF hasta que la zona `frente` esté despejada. |
+| **Oclusión parcial / Sombra** | Detección intermitente del color del pilar. | El filtro de moda previene que el robot alterne bruscamente entre estados de evasión y seguimiento. |
+| **Saturación del bus I²C** | Congelamiento de lecturas de distancia. | Rutina de *watchdog* que reinicia el bus y reasigna direcciones en $<100\text{ ms}$ sin detener la tracción. |
 
 ---
 
