@@ -1444,3 +1444,40 @@ $$\theta_{\text{dirección}} = K_p \cdot e(t)$$
 
 Video Desafio Abierto Futuros Ingenieros WRO 2025 https://youtu.be/I2WFhmv6V5k
 Video Desafio Abierto 2 Futuros Ingenieros WRO 2026 https://www.youtube.com/watch?v=3iQoEDr1jIw
+
+---
+
+## 🔄 Evolución del Hardware: Versión Inicial (v1.0) vs. Versión Actual (v2.0)
+
+### 1. Contexto de la Arquitectura Inicial (v1.0)
+La primera versión del prototipo se concibió como un sistema compacto verticalizado de tres niveles sobre un chasis base LEGO Technic corto.
+
+* **Estructura:** Placa base rígida en la parte inferior para sostener la tracción y el driver L298N, un piso intermedio para el banco de baterías Li-Ion 18650, y una plataforma superior donde residía la Raspberry Pi 5 con la tarjeta de expansión relé y voltímetro.
+* **Geometría:** Distancia entre ejes reducida ($\sim 130\text{ mm}$) con ancho de vía estrecho en el tren posterior.
+* **Sensado:** Cámara montada en posición frontal baja sobre el servomotor vertical, acompañada por un único arreglo de sensores en la parte inferior.
+
+---
+
+### 2. Problemas Identificados durante las Pruebas de Campo (*In-Field Failures*)
+
+| Área | Limitación Detectada en v1.0 | Impacto en Competencia |
+| :--- | :--- | :--- |
+| **Estabilidad Dinámica** | Centro de gravedad excesivamente elevado por el apilamiento de baterías y relé en la cima. | Inestabilidad lateral severa; el robot sufría volcamiento parcial o derrapes incontrolados en giros cerrados a velocidades $>0.8\text{ m/s}$. |
+| **Gestión Térmica y Espacio** | Disipación de calor obstruida entre la Raspberry Pi 5 y los módulos de potencia superiores. | Estrangulamiento térmico (*thermal throttling*) en la Raspberry Pi 5 tras 5 minutos de inferencia continua con la NPU Hailo-8L. |
+| **Campo de Visión (FoV)** | La cámara en posición ultra-baja sufría oclusión directa por la inclinación del chasis durante la aceleración. | Pérdida puntual de la línea de carril y lecturas erróneas por deslumbramiento de luces superiores. |
+| **Cableado y Mantenimiento** | Rutas de cable excesivamente largas e hiperconectadas sin canalización fija. | Ruido electromagnético introducido en el bus I²C por la proximidad de los cables de señal a las líneas de potencia del relé/motor. |
+
+---
+
+### 3. Decisiones de Rediseño y Mitigación (Transición a v2.0)
+
+1. **Ampliación del *Wheelbase* y Reorganización de Masas:**
+   * Se extendió la distancia entre ejes a $\sim 170\text{ mm}$ y se ensanchó el eje posterior.
+   * Se reubicaron las baterías 18650 y el regulador en una posición más baja y centrada para reducir el momento de inercia rotacional ($I_z$).
+
+2. **Aislamiento de Señal y Módulos Protegidos:**
+   * Se integró una placa intermedia de soporte cortada/impresa a medida con separadores mecánicos para aislar la Raspberry Pi 5 del calor residual del driver de motores.
+   * Se canalizó el cableado mediante abrazaderas fijas (*zip ties*), separando las líneas de control I²C/CSI de las líneas de alta corriente.
+
+3. **Optimización del Sello Sensorial:**
+   * Se elevó la montura de la cámara y se agregaron soportes rígidos para los tres sensores ToF VL53L5CX (frontal, izquierdo y derecho), garantizando una cobertura espacial de $180^\circ$ sin puntos ciegos.
