@@ -1324,3 +1324,12 @@ Mediante la caracterización empírica del puerto JST y la implementación del r
 
 
 ```python
+
+```
+
+
+---
+
+# Videos del Primer Desafio y Segundo Desafio
+
+
