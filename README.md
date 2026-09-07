@@ -130,6 +130,33 @@ Para que el robot pueda moverse y girar eficientemente, el sistema opera de la s
 
 Este diseño, meticulosamente modelado en **3D**, permite una visualización detallada y una optimización exhaustiva de la ergonomía, la resistencia y la funcionalidad del robot antes de proceder con su construcción física. Esto asegura un rendimiento óptimo en todos los aspectos de su mecánica y dirección.
 
+---
+## ⚙️ Diseño Mecánico, Tracción y Dinámica Vehicular
+
+### Configuración Geométrica y Chasis
+El vehículo fue construido utilizando una estructura híbrida modular basada en vigas estructurales tipo LEGO Technic combinadas con placas de soporte impresas/cortadas a medida y fijaciones de alta rigidez para evitar torsiones mecánicas.
+
+* **Geometría del Vehículo:**
+  * **Distancia entre ejes (*Wheelbase*):** $\sim 170\text{ mm}$.
+  * **Ancho de vía (*Track width*):** $\sim 145\text{ mm}$.
+  * **Diámetro de neumático:** $\sim 56\text{ mm}$ (goma de alto agarre con banda de rodadura estriada).
+  * **Sistema de Dirección:** Eje delantero pivotante accionado por un servomotor montado en posición vertical superior, conectado mediante bieletas rígidas de dirección.
+
+### Distribución de Masas y Dinámica Vehicular
+La disposición de componentes en varios niveles verticales optimiza el espacio pero requiere un control preciso de la transferencia de pesos:
+
+* **Reparto de Pesos:** Estimado en **60% eje posterior / 40% eje anterior**. El posicionamiento del paquete de celdas Li-Ion 18650 y el driver L298N sobre el eje trasero incrementa la carga normal ($N$) sobre las ruedas motrices, maximizando el agarre mecánico y reduciendo el deslizamiento en aceleración.
+* **Centro de Masa:** La Raspberry Pi 5 y la NPU Hailo-8L se sitúan en la plataforma superior. Para compensar este centro de gravedad elevado, se mantuvo un ancho de vía amplio ($145\text{ mm}$), otorgando estabilidad lateral en maniobras evasivas rápidas.
+
+### Análisis del Sistema de Transmisión
+
+| Parámetro Mecánico | Especificación / Configuración | Justificación Técnico-Práctica |
+| :--- | :--- | :--- |
+| **Configuración** | Tracción Trasera (RWD) con bloque cerrado | Garantiza transferencia directa de potencia sin pérdida de alineación. |
+| **Relación de Transmisión** | Reducción interna diferencial ($\sim 1:30$) | Proporciona el torque adecuado para vencer la inercia del chasis cargado manteniendo velocidad constante. |
+| **Puntos de Giro** | Vínculos rígidos en dirección delantera | Elimina el juego mecánico (*backlash*) para mantener la precisión en el ángulo de viraje. |
+| **Rigidez Estructural** | Vigas perforadas reforzadas con abrazaderas | Soporta las vibraciones continuas de la pista sin desalinear los sensores ToF ni la cámara. |
+
 
 ---
 
