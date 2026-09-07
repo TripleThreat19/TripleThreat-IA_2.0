@@ -28,7 +28,7 @@ Ahora, después de esas dos increíbles experiencias, queríamos un nuevo desaf�
 
 [![Imagen de Portada del Proyecto Orlando](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Vehiculo-Fotos/Portada1.jpeg)
 
-Este repositorio centraliza toda la **documentación técnica** del proyecto **Orlando**, una iniciativa desarrollada por el equipo **Triple Threat** para la categoría **Futuros Ingenieros** de la **WRO 2025**. Aquí, desglosamos meticulosamente cada aspecto de nuestro robot: desde el **diseño detallado del vehículo** y la **programación del sistema de control**, hasta la **selección estratégica de componentes** y la **estructura de cableado** implementada para su óptimo funcionamiento.
+Este repositorio centraliza toda la **documentación técnica** del proyecto **Orlando**, una iniciativa desarrollada por el equipo **Triple Threat** para la categoría **Futuros Ingenieros** de la **WRO 2026**. Aquí, desglosamos meticulosamente cada aspecto de nuestro robot: desde el **diseño detallado del vehículo** y la **programación del sistema de control**, hasta la **selección estratégica de componentes** y la **estructura de cableado** implementada para su óptimo funcionamiento.
 
 Cada sección es un reflejo de nuestro **esfuerzo, dedicación y compromiso** como equipo frente a este emocionante desafío. El proyecto Orlando no es solo una solución técnica a un problema propuesto; es el culmen de incontables horas de **trabajo en equipo, investigación profunda, pruebas constantes y mejora continua**, todo impulsado por nuestra **pasión por la robótica y el aprendizaje colaborativo**.
 
@@ -157,6 +157,28 @@ La disposición de componentes en varios niveles verticales optimiza el espacio 
 | **Puntos de Giro** | Vínculos rígidos en dirección delantera | Elimina el juego mecánico (*backlash*) para mantener la precisión en el ángulo de viraje. |
 | **Rigidez Estructural** | Vigas perforadas reforzadas con abrazaderas | Soporta las vibraciones continuas de la pista sin desalinear los sensores ToF ni la cámara. |
 
+
+---
+
+## ⚡ Presupuesto de Potencia (*Power Budget*) y Calibración
+
+### Balance Energético
+El sistema utiliza un esquema de alimentación distribuida alimentado por un banco de celdas Li-Ion 18650 en configuración 2S2P ($7.4\text{V}$ nominales), regulado mediante etapas independientes para aislar el ruido inductivo de los motores de la lógica de procesamiento.
+
+| Subsistema | Componentes Principales | Tensión ($V$) | Consumo Nominal | Consumo Pico |
+| :--- | :--- | :---: | :---: | :---: |
+| **Procesamiento AI** | Raspberry Pi 5 + NPU Hailo-8L | $5.0\text{V}$ (vía UPS) | $1.8\text{ A}$ | $3.2\text{ A}$ |
+| **Sensado y Visión** | 3x VL53L5CX + AI Camera | $3.3\text{V} / 5.0\text{V}$ | $0.35\text{ A}$ | $0.5\text{ A}$ |
+| **Actuación y Control** | Servomotor de dirección + Driver L298N | $7.4\text{V}$ (Directo) | $0.8\text{ A}$ | $2.5\text{ A}$ |
+| **TOTAL** | -- | -- | **$2.95\text{ A}$** | **$6.20\text{ A}$** |
+
+### Calibración y Mitigación de Ruido en Sensores ToF
+Las lecturas crudas del sensor VL53L5CX son susceptibles al ruido por reflectividad del suelo o variaciones de luz ambiental. Se implementó una rutina de calibración previa al arranque:
+
+1. **Rechazo de Falsos Ecos:** Se descartan zonas cuya tasa de señal (*Signal Rate*) sea inferior a $2\text{ MCPS/SPAD}$ o cuyo estado de validez devuelto por el *firmware* no pertenezca al conjunto de lecturas óptimas ($\{5, 9, 4, 13\}$).
+2. **Corte por Desviación Estándar:** Se aplica una criba adaptativa donde la variabilidad de la medición ($\sigma$) debe cumplir con:
+$$\sigma \le \max(15\text{ mm}, 8\% \cdot d)$$
+donde $d$ es la distancia medida en milímetros. Si la celda supera este umbral de incertidumbre, se etiqueta como `zona no fiable` y se excluye de la reducción de distancias.
 
 ---
 
