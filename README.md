@@ -1484,7 +1484,7 @@ La primera versión del prototipo se concibió como un sistema compacto vertical
   
      ![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Vehiculo-Fotos/Dise%C3%B1o%20Demo.jpg)
       ![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Vehiculo-Fotos/Dise%C3%B1o%20Demo%202.jpg)
-      ![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Vehiculo-Fotos/Dise%C3%B1o%20Demo%202.jpg)
+      ![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Vehiculo-Fotos/Dise%C3%B1o%20Demo%204.jpg)
 
 
 
