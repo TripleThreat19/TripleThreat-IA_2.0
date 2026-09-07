@@ -1332,4 +1332,4 @@ Mediante la caracterización empírica del puerto JST y la implementación del r
 
 # Videos del Primer Desafio y Segundo Desafio
 
-
+Video Desafio Abierto Futuros Ingenieros WRO 2025 https://youtu.be/I2WFhmv6V5k
