@@ -1483,5 +1483,8 @@ La primera versión del prototipo se concibió como un sistema compacto vertical
    * Se elevó la montura de la cámara y se agregaron soportes rígidos para los tres sensores ToF VL53L5CX (frontal, izquierdo y derecho), garantizando una cobertura espacial de $180^\circ$ sin puntos ciegos.
   
      ![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Vehiculo-Fotos/Dise%C3%B1o%20Demo.jpg)
-      ![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Vehiculo-Fotos/Dise%C3%B1o%20Demo.jpg)
+      ![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Vehiculo-Fotos/Dise%C3%B1o%20Demo%202.jpg)
+      ![Logo del Equipo Triple Threat](https://github.com/TripleThreat19/TripleThreat-IA_2.0/blob/main/Vehiculo-Fotos/Dise%C3%B1o%20Demo%202.jpg)
+
+
 
