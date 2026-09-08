@@ -1435,6 +1435,668 @@ $$\theta_{\text{dirección}} = K_p \cdot e(t)$$
 
 ```python
 
+"""Maquina de estados del Open Challenge: 3 vueltas esquivando paredes.
+
+Deliberadamente simple. Giros cronometrados, sin PD y sin estimacion de angulo:
+todo lo que hay aqui se puede verificar empujando el robot a mano.
+
+NO TOCA HARDWARE. Devuelve que habria que hacer; quien mueve el motor es otro.
+"""
+import os
+import json
+import os
+import time
+
+# --- parametros a calibrar en la pista ---
+DISPARO_MM = 300      # el frontal por debajo de esto = esquina
+PELIGRO_MM = 110      # un lateral por debajo de esto = vas torcido, apartate
+
+# Banda muerta del antichoque: entra a PELIGRO_MM y no suelta hasta SEGURO_MM.
+# IGUALES = sin banda muerta, que es el comportamiento validado en pista.
+# Subir SEGURO_MM separa mas del muro y corta el zigzag, pero si el robot no
+# llega a esa distancia se queda apartandose: para eso esta ESQUIVE_MAX_S.
+SEGURO_MM = 110
+ESQUIVE_MAX_S = 0.0   # 0 = sin escape. Segundos maximos apartandose seguidos.
+T_GIRO_S = 3.35       # duracion MINIMA del giro
+T_GIRO_MAX = 6.0      # tope duro: nunca girar mas de esto
+T_ESPERA = 0.8        # tras un giro, no se admite otro hasta pasado esto
+VEL_RECTA = 0.80      # potencia de traccion en recta
+VEL_GIRO = 0.30       # potencia durante el giro
+VOLANTE = 1.00        # volante a tope en el giro
+CORRECCION = 0.35     # volante al apartarse de una pared
+
+# Tras esquivar una pared el volantazo hay que DESHACERLO, o el robot se queda
+# torcido y va acumulando desvio esquive tras esquive. Al despejarse el lateral
+# se contravira el mismo tiempo (por el factor) que duro el esquive.
+RECUPERA_FACTOR = 0.7    # 0 = desactivado. 1 = contravira lo mismo que esquivo
+RECUPERA_MAX_S  = 1.5    # tope: nunca contravirar mas que esto
+# Cuanto volante en la contravirada, como fraccion del esquive. Al 1.0 devolvia
+# el robot contra la pared con la misma fuerza con que lo habia apartado.
+RECUPERA_VOLANTE = 0.35
+ESQUINAS_META = 12    # 4 por vuelta x 3 vueltas
+CONFIRMAR = 3         # frames seguidos para congelar el sentido
+
+# Una esquina se disparaba con UN solo frame: bastaba una lectura mala del frontal
+# para que el robot pegara un giro cerrado en plena recta (visto en pista 05/09).
+CONFIRMAR_ESQUINA = 2    # frames seguidos con el frente cerca antes de girar
+FRENTE_URGENTE = 220     # tan cerca que se gira sin esperar confirmacion
+
+# Margen minimo entre laterales para fiarse de la comparacion. Por debajo de esto
+# la diferencia puede venir del montaje de los sensores, no de la pista.
+MARGEN_SENTIDO = 150
+
+# En un pasillo, un lado que no devuelve NADA es casi siempre el lado abierto:
+# la pared negra lejana no da eco. Si ademas el otro lado tiene pared por debajo
+# de esto, no hay duda razonable y se decide sin esperar a la emergencia.
+LADO_BLOQUEADO = 350
+
+# En la esquina no se decide con la ultima lectura, sino con la MODA de las
+# ultimas: un disparo suelto no puede mandar al robot hacia el lado que no es.
+HIST_LADOS = 7           # lecturas guardadas de cada lateral (~0.5 s a 15 fps)
+
+# Y el frontal se filtra por MEDIANA de 3 frames reales: un cabeceo suelto no
+# puede mandar al robot a girar en plena recta.
+HIST_FRENTE = 3
+LEJOS = 99999            # marca interna de "no veo nada"
+
+# Y se llega mas despacio, para tener mas lecturas antes de decidir.
+FRENAR_FACTOR = 1.6      # a partir de DISPARO x esto se afloja el gas
+VEL_APROX = 0.6          # fraccion de VEL_RECTA al aproximarse a la esquina
+
+
+# Correccion de deriva: el chasis tira hacia un lado, asi que cada cierto tiempo
+# se da un toque de volante al contrario. Ambos valores se ajustan desde la web.
+DERIVA_INTERVALO = 0.8   # segundos entre toques. 0 = desactivada. MEDIDO en pista 05/09
+DERIVA_CORRECCION = 0.12 # -1..1. Negativo corrige una deriva hacia la DERECHA. MEDIDO en pista 05/09
+DERIVA_DURACION = 0.20   # cuanto dura cada toque
+
+# La deriva empuja al robot contra la pared EXTERIOR, que le sirve de guia, y la
+# exterior esta siempre en el lado CONTRARIO al giro. Con sentido IZQ esta a la
+# derecha (+0.12, el valor probado). Con sentido DER hay que empujar al otro
+# lado, y con la misma fuerza sale brusco: por eso lleva su propio valor.
+DERIVA_IZQUIERDA = 0.00
+
+
+# --- Maniobra de esquina en tres tiempos (idea de Carlos, 06/09/2026) ---
+#
+# El frontal NO es fiable a 300 mm: a 350 mm ninguna zona acierta y es estable a
+# la vez. De cerca si: a ~108 mm mide la pared limpiamente. Asi que en vez de
+# girar a ciegas desde lejos, se hace lo contrario: acercarse hasta donde el
+# sensor SI ve, y alli maniobrar.
+#
+#   APROXIMA   avanza despacio hasta PARADA_MM de la pared
+#   RETROCEDE  marcha atras con el volante al lado CONTRARIO: el morro rota
+#              hacia el sentido de giro y ademas se gana hueco
+#   ENCARA     avanza con el volante al lado del giro para terminar de encarar
+#
+# Reglamento 9.21: la marcha atras no puede recorrer mas de 2 secciones. Una
+# maniobra en el sitio no se acerca, asi que es legal en las 12 esquinas.
+# Reglamento 9.18: en Open Challenge NO se puede tocar la pared exterior, y al
+# retroceder girado la cola se acerca a ella: por eso RETROCEDE vigila los
+# laterales y corta si uno baja de PELIGRO_MM.
+#
+# TIEMPOS SIN CALIBRAR. Todo lo de abajo son puntos de partida, no medidas.
+MANIOBRA_ATRAS = False   # DESACTIVADA DEFINITIVAMENTE (Carlos, 07/09).
+                         # Ya no esta en AJUSTABLES: ni el panel ni un
+                         # piloto.env viejo pueden volver a encenderla.
+                         # El giro se hace siempre hacia delante.
+
+# Disparo por FIRMA: en vez de "el frente esta a menos de X mm", se pregunta
+# "cuantas zonas de las filas de arriba estan dentro de la banda". La banda y
+# las filas se ajustan en zonas.json; el numero de zonas, tambien.
+# Con esto puesto NO se hace la fase APROXIMA: la firma ya significa que
+# estamos a la distancia de maniobrar.
+DISPARO_POR_FIRMA = True
+PARADA_MM    = 100       # a que distancia de la pared frontal se para
+VEL_APROXIMA = 0.22      # gas al acercarse; tiene que poder parar en seco
+T_ATRAS_S    = 1.20      # cuanto retrocede girado
+VEL_ATRAS    = 0.30
+T_ENCARA_S   = 1.60      # cuanto avanza girado para terminar
+VEL_ENCARA   = 0.30
+LIBRE_MM     = 250       # frente por encima de esto = ya no hay pared delante
+T_FASE_MAX   = 4.0       # tope duro por fase: si algo se atasca, se pasa igual
+
+
+def _apertura_de(est, mm):
+    """Cuanto de abierto esta un lado. None = sin informacion."""
+    if est == "libre":
+        return 10 ** 6
+    if est in ("pared", "cerca") and mm is not None:
+        return mm
+    return None
+
+
+def explica(p):
+    """Que harian las reglas con esta percepcion. Pura: no cambia nada.
+
+    Devuelve {accion, detalle, giro, porque} para verlo mientras se mueve el
+    robot a mano, con el piloto desarmado.
+    """
+    frente = p.get("frente")
+    izq, der = p.get("izq"), p.get("der")
+    ei, mi = p.get("izq_est"), p.get("izq_mm")
+    ed, md = p.get("der_est"), p.get("der_mm")
+
+    # 1. Hay esquina delante?
+    if DISPARO_POR_FIRMA:
+        hay = bool(p.get("firma_ok"))
+        senal = "firma %s zonas dentro de la banda" % p.get("firma", 0)
+    else:
+        hay = frente is not None and frente <= DISPARO_MM
+        senal = ("frente a %d mm (umbral %d)" % (frente, DISPARO_MM)
+                 if frente is not None else "el frontal no ve nada")
+
+    # 2. Un lateral pegado manda sobre todo lo demas, salvo esquina
+    pegado_izq = izq is not None and izq < PELIGRO_MM
+    pegado_der = der is not None and der < PELIGRO_MM
+
+    if hay:
+        ai, ad = _apertura_de(ei, mi), _apertura_de(ed, md)
+        def txt(e, m):
+            return "sin datos" if e is None else (e if m is None else "%s %d mm" % (e, m))
+        if ai is None and ad is None:
+            giro, porque = None, "los dos lados sin datos: NO sabria hacia donde"
+        elif ai is None:
+            giro = "DER" if ed == "libre" else "IZQ"
+            porque = "izquierda sin datos, derecha %s" % txt(ed, md)
+        elif ad is None:
+            giro = "IZQ" if ei == "libre" else "DER"
+            porque = "derecha sin datos, izquierda %s" % txt(ei, mi)
+        elif abs(ai - ad) < MARGEN_SENTIDO:
+            giro, porque = None, ("izq %s y der %s se parecen demasiado (margen %d): "
+                                  "NO decidiria" % (txt(ei, mi), txt(ed, md), MARGEN_SENTIDO))
+        else:
+            giro = "IZQ" if ai > ad else "DER"
+            porque = "izq %s contra der %s: mas abierto el lado %s" % (
+                txt(ei, mi), txt(ed, md), "izquierdo" if giro == "IZQ" else "derecho")
+
+        if giro is None:
+            return {"accion": "ESQUINA, SIN SENTIDO",
+                    "detalle": "hay esquina pero no sabria hacia donde girar",
+                    "giro": None, "porque": porque + "  ·  " + senal}
+        if MANIOBRA_ATRAS:
+            det = "MARCHA ATRAS girando %s, y luego encarar" % giro
+        else:
+            det = "GIRAR %s hacia delante" % giro
+        return {"accion": "ESQUINA", "detalle": det, "giro": giro,
+                "porque": porque + "  ·  " + senal}
+
+    if pegado_izq:
+        return {"accion": "APARTARSE", "giro": None,
+                "detalle": "pared izquierda a %d mm: volante a la DERECHA" % izq,
+                "porque": "un lateral por debajo de %d mm es ir torcido, no una esquina"
+                          % PELIGRO_MM}
+    if pegado_der:
+        return {"accion": "APARTARSE", "giro": None,
+                "detalle": "pared derecha a %d mm: volante a la IZQUIERDA" % der,
+                "porque": "un lateral por debajo de %d mm es ir torcido, no una esquina"
+                          % PELIGRO_MM}
+
+    return {"accion": "AVANZAR", "giro": None,
+            "detalle": "recta libre: adelante al %d%%" % round(VEL_RECTA * 100),
+            "porque": senal}
+
+
+# --- ajustes persistentes -------------------------------------------------
+# Se leen de piloto.env cada vez que cambia su fecha. El fichero lo escribe
+# /piloto/parametros, asi que lo que se ajusta desde el panel sobrevive a los
+# reinicios del servicio (que con el bus I2C son frecuentes).
+RUTA_ENV = os.path.join(os.path.dirname(os.path.abspath(__file__)), "piloto.env")
+_fecha_env = None
+
+AJUSTABLES = {
+    "VEL_RECTA": float, "VEL_GIRO": float, "T_GIRO_S": float, "T_GIRO_MAX": float,
+    "VOLANTE": float, "CORRECCION": float, "DISPARO_MM": int, "PELIGRO_MM": int,
+    "SEGURO_MM": int, "ESQUIVE_MAX_S": float,
+    "RECUPERA_FACTOR": float, "RECUPERA_MAX_S": float, "RECUPERA_VOLANTE": float,
+    "DERIVA_INTERVALO": float, "DERIVA_CORRECCION": float, "DERIVA_DURACION": float,
+    "DERIVA_IZQUIERDA": float,
+    "CONFIRMAR": int, "CONFIRMAR_ESQUINA": int, "FRENTE_URGENTE": int,
+    "MARGEN_SENTIDO": int, "LADO_BLOQUEADO": int, "ESQUINAS_META": int,
+    "FRENAR_FACTOR": float, "VEL_APROX": float,
+    "DISPARO_POR_FIRMA": bool,
+}
+
+
+def recarga_env():
+    """Relee piloto.env si ha cambiado. Barato: un stat por llamada."""
+    global _fecha_env
+    try:
+        f = os.path.getmtime(RUTA_ENV)
+    except OSError:
+        return
+    if f == _fecha_env:
+        return
+    _fecha_env = f
+    try:
+        with open(RUTA_ENV, encoding="utf-8") as fh:
+            lineas = fh.readlines()
+    except OSError:
+        return
+    for linea in lineas:
+        linea = linea.strip()
+        if not linea or linea.startswith("#") or "=" not in linea:
+            continue
+        k, v = linea.split("=", 1)
+        k, v = k.strip(), v.strip()
+        tipo = AJUSTABLES.get(k)
+        if tipo is None or k not in globals():
+            continue                      # constante desconocida o inexistente
+        try:
+            if tipo is bool:
+                globals()[k] = v.lower() in ("1", "true", "si", "yes", "on")
+            else:
+                globals()[k] = tipo(float(v)) if tipo is int else tipo(v)
+        except ValueError:
+            pass                          # valor corrupto: se ignora
+
+
+def env_actual():
+    """Los valores ajustables que existen ahora mismo."""
+    return {k: globals()[k] for k in AJUSTABLES if k in globals()}
+
+
+# --- esquive de pilares por camara ----------------------------------------
+# APAGADO por defecto: con PILAR_ACTIVO=False el robot se comporta igual que
+# antes de existir esto. Se enciende desde /piloto/parametros.
+PILAR_ACTIVO = False
+PILAR_VETA_ESQUINA = True    # un pilar delante NO es una esquina
+PILAR_MIN_VOLANTE = 0.04     # por debajo de esto no merece la pena corregir
+PILAR_ALTO_VETO = 45         # px de alto del pilar para vetar la esquina
+PILAR_CADUCA_S = 0.6         # datos mas viejos que esto no valen
+RUTA_PILARES = "/dev/shm/pilares.json"
+
+_pilar_cache = {"fecha": None, "dato": None}
+
+
+def lee_pilares():
+    """Ultimo plan del detector, o None si no hay o esta viejo."""
+    try:
+        f = os.path.getmtime(RUTA_PILARES)
+    except OSError:
+        return None
+    if f != _pilar_cache["fecha"]:
+        _pilar_cache["fecha"] = f
+        try:
+            with open(RUTA_PILARES, encoding="utf-8") as fh:
+                _pilar_cache["dato"] = json.load(fh)
+        except Exception:
+            _pilar_cache["dato"] = None
+    d = _pilar_cache["dato"]
+    if not d:
+        return None
+    if time.time() - d.get("t", 0) > PILAR_CADUCA_S:
+        return None                  # el detector se ha quedado atras o muerto
+    return d.get("plan") or None
+
+
+class Navegacion:
+    def __init__(self):
+        self.estado = "ESPERA"
+        self.sentido = None          # "IZQ" o "DER", se congela en la primera esquina
+        self.esquinas = 0
+        self.t_giro = 0.0
+        self.t_fase = 0.0            # inicio de la fase actual de la maniobra
+        self.votos = []
+        self.t_fin_giro = 0.0
+        self.t_deriva = 0.0
+        self.frames_esquina = 0
+        self.hist_lados = []
+        self.hist_frente = []
+        self.seq_cen = None          # ultimo frame visto del frontal
+        self.seq_cen_f = None        # idem, para la mediana del frente
+        self.seq_lados = None        # ultimo frame visto de los laterales
+        self.diag = ""
+        self.t_esquive = 0.0      # cuando empezo el esquive actual
+        self.esquivando = False
+        self.lado_esquive = 0.0   # signo del volante que se aplico
+        self.t_recupera = 0.0     # hasta cuando contravirar
+        self.vol_recupera = 0.0
+        self.motivo = "esperando arranque"
+
+    def arrancar(self):
+        if self.estado == "ESPERA":
+            self.estado = "RECTA"
+            self.motivo = "arrancado"
+
+    def _esquina_hecha(self, ahora):
+        """Cierra una esquina, la cuente quien la cuente (giro o maniobra)."""
+        self.esquinas += 1
+        self.t_fin_giro = ahora
+        self.t_recupera = 0.0
+        self.t_esquive = 0.0
+        self.frames_esquina = 0
+        if self.esquinas >= ESQUINAS_META:
+            self.estado = "FIN"
+            self.motivo = "esquina %d: meta alcanzada" % self.esquinas
+        else:
+            self.estado = "RECTA"
+            self.motivo = "esquina %d terminada" % self.esquinas
+
+    def _empieza_esquina(self, ahora):
+        """Arranca la esquina: maniobra de tres tiempos, o giro de siempre."""
+        self.frames_esquina = 0
+        self.t_recupera = 0.0
+        self.t_esquive = 0.0
+        if MANIOBRA_ATRAS:
+            # Con la firma no se aproxima: el patron ya dice que estamos ahi.
+            self.estado = "RETROCEDE" if DISPARO_POR_FIRMA else "APROXIMA"
+            self.t_fase = ahora
+        else:
+            self.estado = "GIRO"
+            self.t_giro = ahora
+
+    def parar(self):
+        self.estado = "FIN"
+        self.motivo = "parada solicitada"
+
+    # ---- decision del sentido, solo en la primera esquina ----
+    def _resumen_lado(self, lado):
+        """Categoria mayoritaria y distancia mediana de las ultimas lecturas."""
+        cats = [h[lado][0] for h in self.hist_lados if h[lado][0]]
+        if not cats:
+            return (None, None)
+        cat = max(set(cats), key=cats.count)
+        vals = sorted(h[lado][1] for h in self.hist_lados
+                      if h[lado][0] == cat and h[lado][1] is not None)
+        return (cat, vals[len(vals) // 2] if vals else None)
+
+    @staticmethod
+    def _apertura(est, mm):
+        """Cuanto de abierto esta un lado. None = no hay informacion."""
+        if est == "libre":
+            return 10 ** 6                   # abierto de par en par
+        if est in ("pared", "cerca") and mm is not None:
+            return mm
+        return None
+
+    def _votar_sentido(self, p, urgente=False):
+        """Se gira hacia el lado mas ABIERTO, o sea el contrario a la pared mas
+        cercana. Se usa la MODA del historico, no la ultima lectura suelta.
+
+        urgente=True: la pared esta encima. Se decide con lo que haya, sin
+        margen, sin historico completo y sin confirmacion. Girar hacia un lado
+        dudoso es mejor que empotrarse de frente por no decidir.
+        """
+        if not urgente and len(self.hist_lados) < HIST_LADOS:
+            self.diag = "acumulando historico %d/%d" % (len(self.hist_lados), HIST_LADOS)
+            return None
+
+        ei, mi = self._resumen_lado("izq")
+        ed, md = self._resumen_lado("der")
+        ai, ad = self._apertura(ei, mi), self._apertura(ed, md)
+
+        def txt(e, m):
+            return e if m is None else "%s %d mm" % (e, m)
+
+        if ai is None and ad is None:
+            self.diag = "los dos lados sin datos"
+            return None
+        if ai is None:
+            # Un lado DESCONOCIDO no es un lado bloqueado, pero una pared conocida
+            # SI lo es: con la pared encima se huye hacia lo desconocido.
+            if ed == "libre":
+                v = "DER"
+                self.diag = "izquierda sin datos, derecha abierta"
+            elif urgente or (ed in ("pared", "cerca") and md is not None
+                             and md <= LADO_BLOQUEADO):
+                v = "IZQ"
+                self.diag = "izquierda sin datos y derecha %s: me aparto" % txt(ed, md)
+            else:
+                self.diag = "izquierda sin datos y derecha %s" % txt(ed, md)
+                return None
+        elif ad is None:
+            if ei == "libre":
+                v = "IZQ"
+                self.diag = "derecha sin datos, izquierda abierta"
+            elif urgente or (ei in ("pared", "cerca") and mi is not None
+                             and mi <= LADO_BLOQUEADO):
+                v = "DER"
+                self.diag = "derecha sin datos e izquierda %s: me aparto" % txt(ei, mi)
+            else:
+                self.diag = "derecha sin datos e izquierda %s" % txt(ei, mi)
+                return None
+        elif abs(ai - ad) < MARGEN_SENTIDO and not urgente:
+            self.diag = "izq %s vs der %s: se parecen" % (txt(ei, mi), txt(ed, md))
+            return None
+        else:
+            v = "IZQ" if ai > ad else "DER"
+            self.diag = "izq %s vs der %s" % (txt(ei, mi), txt(ed, md))
+
+        if urgente:
+            self.diag = "PARED ENCIMA: " + self.diag
+            return v                      # sin esperar a la confirmacion
+        self.votos.append(v)
+        if len(self.votos) > CONFIRMAR:
+            self.votos.pop(0)
+        if len(self.votos) == CONFIRMAR and len(set(self.votos)) == 1:
+            return v                          # varios frames seguidos de acuerdo
+        return None
+
+    def paso(self, p, ahora=None):
+        """p viene de percepcion.leer(). Devuelve {'traccion','volante',...}."""
+        recarga_env()
+        ahora = ahora if ahora is not None else time.time()
+        traccion, volante = 0.0, 0.0
+
+        # paso() se llama cientos de veces por segundo y los sensores dan 6-15 fps:
+        # sin este filtro el historico serian copias del mismo frame.
+        # mediana de los ultimos frames REALES del frontal
+        if p.get("cen_seq") != self.seq_cen_f:
+            self.seq_cen_f = p.get("cen_seq")
+            f = p.get("frente")
+            self.hist_frente.append(LEJOS if f is None else f)
+            if len(self.hist_frente) > HIST_FRENTE:
+                self.hist_frente.pop(0)
+        if self.hist_frente:
+            m = sorted(self.hist_frente)[len(self.hist_frente) // 2]
+            p = dict(p)
+            p["frente"] = None if m >= LEJOS else m
+
+        seq_l = (p.get("izq_seq"), p.get("der_seq"))
+        if seq_l != self.seq_lados:
+            self.seq_lados = seq_l
+            self.hist_lados.append({"izq": (p.get("izq_est"), p.get("izq_mm")),
+                                    "der": (p.get("der_est"), p.get("der_mm"))})
+            if len(self.hist_lados) > HIST_LADOS:
+                self.hist_lados.pop(0)
+
+        if self.estado == "ESPERA":
+            self.motivo = "esperando boton de arranque"
+
+        elif self.estado == "FIN":
+            self.motivo = "3 vueltas completadas"
+
+        elif self.estado == "GIRO":
+            traccion, volante = VEL_GIRO, (VOLANTE if self.sentido == "DER" else -VOLANTE)
+            transcurrido = ahora - self.t_giro
+            self.motivo = "girando %s (%.2f de %.2f s)" % (self.sentido, transcurrido, T_GIRO_S)
+            # Libre = no hay lectura, O la hay pero lejos. Antes solo
+            # contaba el None, asi que una pared a 1,8 m mantenia el
+            # giro vivo hasta T_GIRO_MAX. Visto en pista el 07/09.
+            frente_libre = (p["frente"] is None
+                            or p["frente"] >= LIBRE_MM)
+            if transcurrido >= T_GIRO_S and not frente_libre and transcurrido < T_GIRO_MAX:
+                self.motivo = ("girando %s: %.1fs, frente aun a %d mm, sigo"
+                               % (self.sentido, transcurrido, p["frente"]))
+            elif transcurrido >= T_GIRO_S:
+                self._esquina_hecha(ahora)
+
+        elif self.estado == "APROXIMA":
+            # Acercarse despacio hasta donde el frontal mide de verdad.
+            traccion = VEL_RECTA * VEL_APROXIMA
+            f = p["frente"]
+            t = ahora - self.t_fase
+            self.motivo = ("acercandose a la pared (%s mm, %.1f s)"
+                           % ("?" if f is None else int(f), t))
+            if (f is not None and f <= PARADA_MM) or t >= T_FASE_MAX:
+                self.estado = "RETROCEDE"
+                self.t_fase = ahora
+                self.motivo = ("a %s mm de la pared: marcha atras hacia %s"
+                               % ("?" if f is None else int(f), self.sentido))
+
+        elif self.estado == "RETROCEDE":
+            # Volante al lado CONTRARIO al giro: marcha atras asi rota el morro
+            # HACIA el sentido elegido, y de paso separa de la pared.
+            traccion = -VEL_ATRAS
+            volante = (-VOLANTE if self.sentido == "DER" else VOLANTE)
+            t = ahora - self.t_fase
+            izq, der = p["izq"], p["der"]
+            # 9.18: no se puede tocar la pared exterior. La cola va hacia ella.
+            cola_pegada = ((izq is not None and izq < PELIGRO_MM)
+                           or (der is not None and der < PELIGRO_MM))
+            libre = p["frente"] is not None and p["frente"] >= LIBRE_MM
+            self.motivo = "atras girado %s (%.2f de %.2f s)" % (self.sentido, t, T_ATRAS_S)
+            if cola_pegada:
+                self.estado = "ENCARA"
+                self.t_fase = ahora
+                self.motivo = "lateral a menos de %d mm: corto la marcha atras" % PELIGRO_MM
+            elif t >= T_ATRAS_S or libre or t >= T_FASE_MAX:
+                self.estado = "ENCARA"
+                self.t_fase = ahora
+                self.motivo = "hueco hecho: encarando %s" % self.sentido
+
+        elif self.estado == "ENCARA":
+            traccion = VEL_ENCARA
+            volante = (VOLANTE if self.sentido == "DER" else -VOLANTE)
+            t = ahora - self.t_fase
+            self.motivo = "encarando %s (%.2f de %.2f s)" % (self.sentido, t, T_ENCARA_S)
+            if t >= T_ENCARA_S or t >= T_FASE_MAX:
+                self._esquina_hecha(ahora)
+
+        elif self.estado == "RECTA":
+            traccion = VEL_RECTA
+            if p["frente"] is not None and p["frente"] <= DISPARO_MM * FRENAR_FACTOR:
+                traccion = VEL_RECTA * VEL_APROX      # llegar despacio a la esquina
+            frente, izq, der = p["frente"], p["izq"], p["der"]
+
+            # cuantos frames NUEVOS del frontal seguidos con la esquina delante
+            if p.get("cen_seq") != self.seq_cen:
+                self.seq_cen = p.get("cen_seq")
+                if DISPARO_POR_FIRMA:
+                    cerca = bool(p.get("firma_ok"))
+                else:
+                    cerca = frente is not None and frente <= DISPARO_MM
+                if cerca:
+                    self.frames_esquina += 1
+                else:
+                    self.frames_esquina = 0
+
+            # 1. Antichoque: un lateral pegado significa que vas torcido, no que haya esquina
+            cerca = ((izq is not None and izq < PELIGRO_MM)
+                     or (der is not None and der < PELIGRO_MM))
+            despejado = ((izq is None or izq >= SEGURO_MM)
+                         and (der is None or der >= SEGURO_MM))
+            if cerca:
+                self.esquivando = True
+            elif despejado:
+                self.esquivando = False
+            if (ESQUIVE_MAX_S > 0 and self.esquivando and self.t_esquive > 0.0
+                    and ahora - self.t_esquive >= ESQUIVE_MAX_S):
+                self.esquivando = False
+            esquivando = self.esquivando
+
+            # se acaba de despejar el lateral -> programar la contravirada
+            if not esquivando and self.t_esquive > 0.0:
+                dur = ahora - self.t_esquive
+                self.t_esquive = 0.0
+                if RECUPERA_FACTOR > 0:
+                    self.t_recupera = ahora + min(dur * RECUPERA_FACTOR, RECUPERA_MAX_S)
+                    self.vol_recupera = -self.lado_esquive * RECUPERA_VOLANTE
+
+            # Una pared DELANTE manda sobre una pared al lado. Sin esto, con un
+            # lateral pegado el robot se quedaba "apartandose" indefinidamente y se
+            # comia la pared frontal sin llegar a girar nunca (visto 05/09).
+            # el detector de pilares, si esta encendido y al dia
+            plan_pilar = lee_pilares() if PILAR_ACTIVO else None
+            obj_pilar = (plan_pilar or {}).get("objetivo")
+            pilar_delante = bool(
+                obj_pilar and obj_pilar.get("alto_px", 0) >= PILAR_ALTO_VETO)
+
+            if DISPARO_POR_FIRMA:
+                hay_esquina = (bool(p.get("firma_ok"))
+                               and ahora - self.t_fin_giro >= T_ESPERA
+                               and self.frames_esquina >= CONFIRMAR_ESQUINA)
+            else:
+                hay_esquina = (frente is not None and frente <= DISPARO_MM
+                               and ahora - self.t_fin_giro >= T_ESPERA
+                               and (self.frames_esquina >= CONFIRMAR_ESQUINA
+                                    or frente <= FRENTE_URGENTE))
+
+            # Un pilar delante hace disparar la firma del frontal: el ToF no
+            # sabe distinguir un pilar de una pared. Sin este veto, el robot
+            # giraria en mitad de la recta al primer pilar.
+            if hay_esquina and PILAR_VETA_ESQUINA and pilar_delante:
+                hay_esquina = False
+                self.motivo = ("pilar %s delante (%d px): NO es esquina"
+                               % (obj_pilar["color"], obj_pilar["alto_px"]))
+
+            if esquivando and not hay_esquina:
+                if self.t_esquive == 0.0:
+                    self.t_esquive = ahora          # arranca un esquive nuevo
+                if izq is not None and izq < PELIGRO_MM:
+                    volante = CORRECCION
+                    self.motivo = "pared izquierda a %d mm: apartandose" % izq
+                else:
+                    volante = -CORRECCION
+                    self.motivo = "pared derecha a %d mm: apartandose" % der
+                self.lado_esquive = volante
+
+            # 2. Esquina: frontal dentro del anillo
+            elif hay_esquina:
+                if self.sentido is None:
+                    # Con el disparo por firma el frente ronda siempre los 150,
+                    # asi que la via de emergencia se disparaba SIEMPRE y decidia
+                    # con el historico de la recta anterior. Solo vale sin firma.
+                    urge = (not DISPARO_POR_FIRMA
+                            and frente is not None and frente <= FRENTE_URGENTE)
+                    v = self._votar_sentido(p, urgente=urge)
+                    if v is None:
+                        self.motivo = ("esquina a %d mm, sentido sin decidir: %s"
+                                       % (frente, self.diag))
+                    else:
+                        self.sentido = v
+                        self._empieza_esquina(ahora)
+                        self.motivo = ("SENTIDO CONGELADO: %s (%s). Esquina 1"
+                                       % (v, self.diag))
+                else:
+                    self._empieza_esquina(ahora)
+                    if DISPARO_POR_FIRMA:
+                        self.motivo = ("firma %d/%d zonas: esquina %d"
+                                       % (p.get("firma", 0), 0, self.esquinas + 1))
+                    else:
+                        self.motivo = ("esquina a %d mm: esquina %d"
+                                       % (frente, self.esquinas + 1))
+
+            elif (plan_pilar
+                  and abs(plan_pilar.get("volante", 0.0)) >= PILAR_MIN_VOLANTE):
+                volante = float(plan_pilar["volante"])
+                self.motivo = "camara: " + plan_pilar.get("motivo", "esquivando pilar")
+
+            elif ahora < self.t_recupera:
+                volante = self.vol_recupera
+                self.motivo = ("recuperando el volantazo (%+.2f, quedan %.1f s)"
+                               % (volante, self.t_recupera - ahora))
+
+            elif (DERIVA_INTERVALO > 0 and DERIVA_CORRECCION != 0
+                  and (ahora - self.t_deriva) % DERIVA_INTERVALO < DERIVA_DURACION):
+                deriva = DERIVA_CORRECCION
+                if self.sentido == "DER":
+                    deriva = -DERIVA_IZQUIERDA     # pared exterior a la izquierda
+                volante = deriva
+                self.motivo = "recta, corrigiendo deriva (%+.2f)" % deriva
+            else:
+                self.motivo = "recta libre"
+
+        return {
+            "estado": self.estado,
+            "sentido": self.sentido or "-",
+            "esquinas": self.esquinas,
+            "traccion": round(traccion, 2),
+            "volante": round(volante, 2),
+            "motivo": self.motivo,
+        }
+
 ```
 
 
