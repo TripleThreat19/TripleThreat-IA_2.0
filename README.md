@@ -1444,7 +1444,7 @@ $$\theta_{\text{dirección}} = K_p \cdot e(t)$$
 
 Video Desafio Abierto Futuros Ingenieros WRO 2025 https://youtu.be/I2WFhmv6V5k
 Video Desafio Abierto 2 Futuros Ingenieros WRO 2026 https://www.youtube.com/watch?v=3iQoEDr1jIw
-
+Video Desafio de Obstáculos Futuros Ingenieros WRO 2026 https://youtu.be/fkHKNBp7Blo
 ---
 
 ## 🔄 Evolución del Hardware: Versión Inicial (v1.0) vs. Versión Actual (v2.0)
